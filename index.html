@@ -459,7 +459,31 @@
       <p class="hint" id="cropHint" style="display:none;margin-top:8px;">arraste (ou toque) pra posicionar &middot; scroll ou pinça pra zoom</p>
     </div>
 
-    <details class="panel" name="painel">
+    <div class="panel">
+      <h2>Look</h2>
+      <div class="toggle-group" id="lookGroup">
+        <button data-v="thermal" class="active">térmica</button>
+        <button data-v="cctv">cctv</button>
+        <button data-v="camcorder">camcorder</button>
+      </div>
+      <p class="hint" style="margin-top:8px;">cada look guarda os próprios ajustes de sensor e ruído.</p>
+    </div>
+
+    <details class="panel" name="painel" id="panelLook" style="display:none;">
+      <summary><h2>Ajustes do look</h2></summary>
+      <div class="row"><label for="lkSat">saturação</label><input type="range" id="lkSat" autocomplete="off" min="0" max="200"><span class="val" id="lkSatVal"></span></div>
+      <div class="row"><label for="lkTemp">frio ↔ quente</label><input type="range" id="lkTemp" autocomplete="off" min="-100" max="100"><span class="val" id="lkTempVal"></span></div>
+      <div class="row"><label for="lkTint">magenta ↔ verde</label><input type="range" id="lkTint" autocomplete="off" min="-100" max="100"><span class="val" id="lkTintVal"></span></div>
+      <div class="row"><label for="lkExposure">exposição</label><input type="range" id="lkExposure" autocomplete="off" min="-50" max="50"><span class="val" id="lkExposureVal"></span></div>
+      <div class="row"><label for="lkContrast">contraste</label><input type="range" id="lkContrast" autocomplete="off" min="-50" max="50"><span class="val" id="lkContrastVal"></span></div>
+      <div class="row"><label for="lkLift">pretos lavados</label><input type="range" id="lkLift" autocomplete="off" min="0" max="50"><span class="val" id="lkLiftVal"></span></div>
+      <div class="row"><label for="lkKeepRed">manter vermelhos</label><input type="range" id="lkKeepRed" autocomplete="off" min="0" max="100"><span class="val" id="lkKeepRedVal"></span></div>
+      <div class="row"><label for="lkSharpen">nitidez</label><input type="range" id="lkSharpen" autocomplete="off" min="0" max="100"><span class="val" id="lkSharpenVal"></span></div>
+      <div class="row"><label for="lkLines">linhas</label><input type="range" id="lkLines" autocomplete="off" min="0" max="100"><span class="val" id="lkLinesVal"></span></div>
+      <p class="hint">"manter vermelhos" segura a cor dos vermelhos mesmo com a imagem dessaturada. no cctv as linhas são o entrelaçado do vídeo; no camcorder, a grade de subpixels da tela LCD.</p>
+    </details>
+
+    <details class="panel" name="painel" id="panelSource">
       <summary><h2>Fonte do calor</h2></summary>
       <p class="hint">de onde vem a "temperatura" de cada pixel antes da paleta.</p>
       <div class="row"><label for="srcRed">luminância → vermelho</label><input type="range" id="srcRed" autocomplete="off" min="0" max="100"><span class="val" id="srcRedVal"></span></div>
@@ -521,12 +545,12 @@
         </div>
       </div>
       <div class="row"><label for="diffusion">difusão</label><input type="range" id="diffusion" autocomplete="off" min="0" max="100"><span class="val" id="diffusionVal"></span></div>
-      <div class="row"><label for="msx">detalhe msx</label><input type="range" id="msx" autocomplete="off" min="0" max="100"><span class="val" id="msxVal"></span></div>
-      <div class="row"><label for="bloom">bloom de calor</label><input type="range" id="bloom" autocomplete="off" min="0" max="100"><span class="val" id="bloomVal"></span></div>
-      <p class="hint">câmeras térmicas reais têm de 80 a 640 px e o calor se espalha (difusão). o msx soma as bordas da foto original por cima, como nas câmeras FLIR. o bloom faz as áreas mais quentes vazarem um halo em volta.</p>
+      <div class="row" id="msxRow"><label for="msx">detalhe msx</label><input type="range" id="msx" autocomplete="off" min="0" max="100"><span class="val" id="msxVal"></span></div>
+      <div class="row"><label for="bloom">bloom</label><input type="range" id="bloom" autocomplete="off" min="0" max="100"><span class="val" id="bloomVal"></span></div>
+      <p class="hint">câmeras térmicas reais têm de 80 a 640 px e o calor se espalha (difusão). o msx soma as bordas da foto original por cima, como nas câmeras FLIR. o bloom faz as áreas mais quentes (ou mais claras, nos looks de vídeo) vazarem um halo em volta.</p>
     </details>
 
-    <details class="panel" name="painel">
+    <details class="panel" name="painel" id="panelRange">
       <summary><h2>Faixa</h2></summary>
       <div class="check"><input type="checkbox" id="rangeAuto" checked><label for="rangeAuto">faixa automática</label></div>
       <div class="row"><label for="level">nível</label><input type="range" id="level" autocomplete="off" min="0" max="100"><span class="val" id="levelVal"></span></div>
@@ -537,7 +561,7 @@
       <p class="hint">nível e span são os controles de uma câmera térmica: o centro e a largura da faixa de temperatura. mexer neles desliga a faixa automática.</p>
     </details>
 
-    <details class="panel" name="painel" open>
+    <details class="panel" name="painel" id="panelPalette" open>
       <summary><h2>Paleta</h2></summary>
       <div class="pal-grid" id="palGrid"></div>
       <div class="pal-preview" id="palPreview"></div>
@@ -561,7 +585,7 @@
       <p class="hint">o grão entra na temperatura, antes da paleta, então vira pontilhado colorido. a vinheta esfria os cantos. as listras imitam o padrão fixo de linhas e colunas dos sensores térmicos baratos.</p>
     </details>
 
-    <details class="panel" name="painel">
+    <details class="panel" name="painel" id="panelScale">
       <summary><h2>Escala</h2></summary>
       <div class="check"><input type="checkbox" id="scaleShow"><label for="scaleShow">mostrar barra de escala</label></div>
       <div class="row"><label>posição</label>
@@ -618,6 +642,36 @@
         <div id="osdFields"></div>
       </div>
       <p class="hint">a interface do aparelho por cima da imagem. as caixas e temperaturas vêm da detecção e do calor da própria imagem; os textos são editáveis.</p>
+    </details>
+
+    <details class="panel" name="painel">
+      <summary><h2>Grade</h2></summary>
+      <div class="row"><label for="gridLayout">layout</label>
+        <select id="gridLayout">
+          <option value="1x1">quadro único</option>
+          <option value="2x2">2 × 2</option>
+          <option value="2x3">2 colunas × 3</option>
+          <option value="3x2">3 colunas × 2</option>
+        </select>
+      </div>
+      <div id="gridControls" style="display:none;">
+        <div class="row"><label for="gridGap">fio</label><input type="range" id="gridGap" autocomplete="off" min="0" max="30"><span class="val" id="gridGapVal"></span></div>
+        <div class="row"><label for="gridGapColor">cor do fio</label><input type="color" id="gridGapColor" aria-label="Cor do fio"></div>
+        <div class="row"><label for="gridNoSignal">sem sinal</label><input type="text" id="gridNoSignal" autocomplete="off" spellcheck="false"></div>
+        <button class="btn" id="btnShuffleCells" style="width:100%;margin-bottom:6px;">⟳ sortear enquadramentos</button>
+        <div class="subhead">quadro</div>
+        <div class="toggle-group" id="cellSel" style="margin-bottom:10px;"></div>
+        <div class="row"><label>conteúdo</label>
+          <div class="toggle-group" id="cellMode">
+            <button data-v="image" class="active">imagem</button>
+            <button data-v="nosignal">sem sinal</button>
+          </div>
+        </div>
+        <div class="row"><label for="cellZoom">zoom</label><input type="range" id="cellZoom" autocomplete="off" min="100" max="600"><span class="val" id="cellZoomVal"></span></div>
+        <div class="row"><label for="cellX">posição x</label><input type="range" id="cellX" autocomplete="off" min="0" max="100"><span class="val" id="cellXVal"></span></div>
+        <div class="row"><label for="cellY">posição y</label><input type="range" id="cellY" autocomplete="off" min="0" max="100"><span class="val" id="cellYVal"></span></div>
+      </div>
+      <p class="hint">cada quadro mostra um enquadramento da mesma imagem, com o próprio OSD (câmera, timecode e zoom mudam de quadro pra quadro). o enquadramento automático mira nos rostos e pessoas detectados pela IA.</p>
     </details>
 
     <div class="panel">
@@ -696,7 +750,26 @@
     scale: { show:false, auto:true, pos:'right', tmin:20, tmax:38, unit:'C', text:'light' },
     // textos de cada template ficam em text (preenchido com os padrões em OSD_TEMPLATES)
     osd: { template:'none', font:'pixel', color:'#7dff9a', size:100, lowres:false, text:{} },
+    // look da imagem; grade = ajustes de cor do look de vídeo atual
+    look: 'thermal',
+    grade: null,
+    // grade multicâmera: cada quadro é um enquadramento (centro x/y + zoom)
+    grid: { layout:'1x1', gap:6, gapColor:'#000000', noSignal:'No Signal', sel:0, auto:true, cells:[] },
   };
+  // ajustes iniciais dos looks de vídeo (sensor e ruído são trocados junto)
+  const LOOK_DEFAULTS = {
+    cctv: {
+      sensor:{ res:640, pixel:false, diffusion:6, msx:0, bloom:45 },
+      noise:{ grain:14, size:1, vignette:15, fpn:10 },
+      grade:{ sat:35, temp:-55, tint:5, exposure:12, contrast:-10, lift:14, keepRed:80, sharpen:0, lines:15 },
+    },
+    camcorder: {
+      sensor:{ res:0, pixel:false, diffusion:0, msx:0, bloom:10 },
+      noise:{ grain:6, size:1, vignette:25, fpn:0 },
+      grade:{ sat:120, temp:30, tint:0, exposure:0, contrast:25, lift:2, keepRed:0, sharpen:55, lines:35 },
+    },
+  };
+  state.grade = { ...LOOK_DEFAULTS.cctv.grade };
   const T_MIN_C = 15, T_SPAN_C = 25;
   const cToHeat = c => (c - T_MIN_C)/T_SPAN_C;
   const heatToC = h => T_MIN_C + h*T_SPAN_C;
@@ -855,8 +928,9 @@ void main(){
   fragColor = sum/total;
 }`;
 
-  // bloom: reduz o calor (como o FRAG_DOWN) guardando só o que passa de 60%
-  // da faixa atual; depois é borrado bem largo e somado no passe final
+  // bloom: reduz (como o FRAG_DOWN) guardando só o excesso acima do limite —
+  // 60% da faixa do calor, ou 72% da luminância da foto nos looks de vídeo
+  // (uLum = 1); depois é borrado bem largo e entra no passe final
   const FRAG_BLOOM = `#version 300 es
 precision highp float;
 in vec2 vUv;
@@ -866,19 +940,82 @@ uniform vec2 uSrcTexel;
 uniform vec2 uScale;
 uniform float uLo;
 uniform float uHi;
+uniform int uLum;
 void main(){
   int n = int(clamp(ceil(max(uScale.x, uScale.y)*0.5), 1.0, 12.0));
+  float lim = uLum == 1 ? 0.72 : 0.6;
   float sum = 0.0;
   for(int j=0; j<12; j++){
     if(j >= n) break;
     for(int i=0; i<12; i++){
       if(i >= n) break;
       vec2 o = (vec2(float(i), float(j)) + 0.5)/float(n) - 0.5;
-      float h = (texture(uTex, vUv + o*uScale*uSrcTexel).r - uLo)/max(uHi - uLo, 1e-4);
-      sum += max(0.0, h - 0.6)/0.4;
+      vec4 s = texture(uTex, vUv + o*uScale*uSrcTexel);
+      float h = uLum == 1 ? dot(s.rgb, vec3(0.2126, 0.7152, 0.0722)) : (s.r - uLo)/max(uHi - uLo, 1e-4);
+      sum += max(0.0, h - lim)/(1.0 - lim);
     }
   }
   fragColor = vec4(sum/float(n*n), 0.0, 0.0, 1.0);
+}`;
+
+  // looks de vídeo (CCTV, camcorder): a foto suavizada pelo sensor →
+  // nitidez → balanço de branco → exposição/contraste → saturação (com
+  // vermelhos preservados) → pretos lavados → halo → vinheta → listras →
+  // linhas (entrelaçado ou subpixels de LCD) → grão
+  const FRAG_LOOK = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uPhoto;
+uniform sampler2D uSrc;
+uniform sampler2D uSrcBlur;
+uniform sampler2D uBloomTex;
+uniform int uLook;
+uniform float uSat, uTemp, uTint, uExposure, uContrast, uLift, uKeepRed, uSharpen, uLines;
+uniform float uBloom, uGrain, uVignette, uFpn;
+uniform vec2 uGrainCell;
+uniform vec2 uSensorPx;
+uniform vec2 uLineCount;
+float hash(vec2 p){
+  uvec2 q = uvec2(ivec2(p) + 8192);
+  q = q*1664525u + 1013904223u;
+  q.x += q.y*1664525u; q.y += q.x*1664525u;
+  q ^= q >> 16u;
+  q.x += q.y*1664525u; q.y += q.x*1664525u;
+  q ^= q >> 16u;
+  return float(q.x ^ q.y) / 4294967295.0;
+}
+void main(){
+  vec3 c = texture(uPhoto, vUv).rgb;
+  if(uSharpen > 0.0) c += uSharpen*1.6*(texture(uSrc, vUv).rgb - texture(uSrcBlur, vUv).rgb);
+  c *= vec3(1.0 + 0.14*uTemp - 0.05*uTint, 1.0 + 0.10*uTint, 1.0 - 0.16*uTemp - 0.05*uTint);
+  c *= exp2(uExposure);
+  c = (c - 0.5)*(1.0 + uContrast) + 0.5;
+  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  float redness = clamp((c.r - max(c.g, c.b))*3.0, 0.0, 1.0);
+  c = mix(vec3(l), c, mix(uSat, max(uSat, 1.1), redness*uKeepRed));
+  c = uLift + clamp(c, 0.0, 1.0)*(1.0 - uLift);
+  if(uBloom > 0.0) c += texture(uBloomTex, vUv).r*uBloom*vec3(0.92, 0.97, 1.0);
+  vec2 q = vUv - 0.5;
+  c *= 1.0 - uVignette*dot(q,q)*1.6;
+  if(uFpn > 0.0){
+    vec2 sp = floor(vUv*uSensorPx);
+    c += uFpn*0.06*((hash(vec2(sp.x, 7.0)) - 0.5) + 0.5*(hash(vec2(13.0, sp.y)) - 0.5));
+  }
+  if(uLines > 0.0){
+    if(uLook == 1){
+      // entrelaçado: uma linha de vídeo sim, outra não, mais escura
+      c *= 1.0 - uLines*0.35*mod(floor((1.0 - vUv.y)*uLineCount.y), 2.0);
+    } else {
+      // tela LCD: subpixels R, G e B em colunas + um vão fino entre as linhas
+      float sub = mod(floor(vUv.x*uLineCount.x*3.0), 3.0);
+      vec3 m = sub < 0.5 ? vec3(1.0, 0.35, 0.35) : sub < 1.5 ? vec3(0.35, 1.0, 0.35) : vec3(0.35, 0.35, 1.0);
+      float gap = step(0.82, fract((1.0 - vUv.y)*uLineCount.y));
+      c *= mix(vec3(1.0), m*1.3*(1.0 - gap*0.6), uLines*0.6);
+    }
+  }
+  c += (hash(floor(vUv/uGrainCell)) - 0.5)*uGrain;
+  fragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
 }`;
 
   // calor suavizado + MSX → equalização → nível/span → bloom → vinheta →
@@ -982,6 +1119,7 @@ void main(){
   const blurProg  = makeProgram(FRAG_BLUR);
   const bloomProg = makeProgram(FRAG_BLOOM);
   const finalProg = makeProgram(FRAG_FINAL);
+  const lookProg  = makeProgram(FRAG_LOOK);
 
   const vao = gl.createVertexArray();
   gl.bindVertexArray(vao);
@@ -1001,10 +1139,11 @@ void main(){
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   }
-  function makeTarget(w, h){
+  // rgba = cor da foto (looks de vídeo), em 8 bits; o resto é campo de calor
+  function makeTarget(w, h, rgba){
     const tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
-    if(FLOAT_OK) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG16F, w, h, 0, gl.RG, gl.HALF_FLOAT, null);
+    if(FLOAT_OK && !rgba) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG16F, w, h, 0, gl.RG, gl.HALF_FLOAT, null);
     else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     setTexParams(gl.LINEAR);
     const fbo = gl.createFramebuffer();
@@ -1012,7 +1151,7 @@ void main(){
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
     const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    return { tex, fbo, w, h, filter:gl.LINEAR, ok };
+    return { tex, fbo, w, h, filter:gl.LINEAR, ok, rgba:!!rgba };
   }
   function freeTarget(t){
     if(!t) return;
@@ -1027,11 +1166,11 @@ void main(){
 
   // alvos por nome, recriados só quando o tamanho muda
   const targets = {};
-  function target(name, w, h){
+  function target(name, w, h, rgba){
     let t = targets[name];
-    if(!t || t.w !== w || t.h !== h){
+    if(!t || t.w !== w || t.h !== h || t.rgba !== !!rgba){
       freeTarget(t);
-      t = targets[name] = makeTarget(w, h);
+      t = targets[name] = makeTarget(w, h, rgba);
     }
     return t;
   }
@@ -1047,6 +1186,8 @@ void main(){
   }
 
   let srcTex = null;
+  // srcT: a foto no mesmo formato dos alvos, pra passar por downsample/blur
+  const srcT = { tex:null, w:1, h:1, filter:gl.LINEAR };
   function uploadSource(canvas){
     if(!srcTex) srcTex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, srcTex);
@@ -1054,6 +1195,7 @@ void main(){
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     setTexParams(gl.LINEAR);
+    srcT.tex = srcTex; srcT.w = canvas.width; srcT.h = canvas.height; srcT.filter = gl.LINEAR;
   }
 
   // paleta: degradê desenhado num canvas 1024×1 e enviado como textura.
@@ -1151,9 +1293,57 @@ void main(){
     return { on: sLong < long, w: Math.max(1, Math.round(W*sLong/long)), h: Math.max(1, Math.round(H*sLong/long)) };
   }
 
+  // sensor: reduz pra resolução do sensor. Como o número de px do sensor é
+  // absoluto, preview e export passam pelo mesmo buffer. Difusão: raio em
+  // fração do lado maior (máx. 4%); sem sensor, um raio grande é borrado
+  // numa cópia reduzida (o resultado é suave de qualquer jeito) pra o blur
+  // de 33 amostras não ficar esparso. rgba = cor da foto (looks de vídeo).
+  function sensorAndDiffusion(src, sd, W, H, rgba){
+    const long = Math.max(W, H), pre = rgba ? 'p' : '';
+    let cur = src;
+    if(sd.on){
+      const s = target(pre + 'sensor', sd.w, sd.h, rgba);
+      downsample(src, s);
+      cur = s;
+    }
+    const rUV = state.sensor.diffusion/100 * 0.04;
+    if(rUV > 0){
+      const MAX_PX = 20;
+      if(!sd.on && rUV*long > MAX_PX){
+        const f = MAX_PX/(rUV*long);
+        const b = target(pre + 'blurSrc', Math.max(1, Math.round(W*f)), Math.max(1, Math.round(H*f)), rgba);
+        downsample(cur, b);
+        cur = b;
+      }
+      const ping = target(pre + 'ping', cur.w, cur.h, rgba), pong = target(pre + 'pong', cur.w, cur.h, rgba);
+      blur(cur, ping, pong, rUV*Math.max(cur.w, cur.h));
+      cur = pong;
+    }
+    return cur;
+  }
+  // bloom numa cópia de ≤200 px, raio de 7% do lado maior
+  function bloomPass(cur, lo, hi, lum){
+    const f = Math.min(1, 200/Math.max(cur.w, cur.h));
+    const bw = Math.max(1, Math.round(cur.w*f)), bh = Math.max(1, Math.round(cur.h*f));
+    const a = target('bloomA', bw, bh);
+    setFilter(cur, gl.LINEAR);
+    pass(bloomProg, a, L=>{
+      bindTex(0, cur.tex, L.uTex);
+      gl.uniform2f(L.uSrcTexel, 1/cur.w, 1/cur.h);
+      gl.uniform2f(L.uScale, cur.w/bw, cur.h/bh);
+      gl.uniform1f(L.uLo, lo);
+      gl.uniform1f(L.uHi, hi);
+      gl.uniform1i(L.uLum, lum ? 1 : 0);
+    });
+    const out = target('bloomC', bw, bh);
+    blur(a, target('bloomB', bw, bh), out, 0.07*Math.max(bw, bh));
+    return out;
+  }
+
   // freeze = usa a faixa/equalização já calculadas (export), pra o arquivo
   // sair igual ao preview
   function renderAll(freeze){
+    if(state.look !== 'thermal') return renderLook();
     const W = RW, H = RH, long = Math.max(W, H);
 
     // 1. calor na resolução de saída
@@ -1177,32 +1367,9 @@ void main(){
       gl.uniform1f(L.uPhoto, sg.photo/100);
     });
 
-    // 2. sensor: reduz pra resolução do sensor. Como o número de px do
-    // sensor é absoluto, preview e export passam pelo mesmo buffer.
-    let cur = full;
+    // 2–3. sensor + difusão
     const sd = sensorDims(W, H);
-    if(sd.on){
-      const s = target('sensor', sd.w, sd.h);
-      downsample(full, s);
-      cur = s;
-    }
-
-    // 3. difusão: raio em fração do lado maior (máx. 4%). Sem sensor, um
-    // raio grande é borrado numa cópia reduzida (o resultado é suave de
-    // qualquer jeito) pra o blur de 33 amostras não ficar esparso.
-    const rUV = state.sensor.diffusion/100 * 0.04;
-    if(rUV > 0){
-      const MAX_PX = 20;
-      if(!sd.on && rUV*long > MAX_PX){
-        const f = MAX_PX/(rUV*long);
-        const b = target('blurSrc', Math.max(1, Math.round(W*f)), Math.max(1, Math.round(H*f)));
-        downsample(cur, b);
-        cur = b;
-      }
-      const ping = target('ping', cur.w, cur.h), pong = target('pong', cur.w, cur.h);
-      blur(cur, ping, pong, rUV*Math.max(cur.w, cur.h));
-      cur = pong;
-    }
+    const cur = sensorAndDiffusion(full, sd, W, H, false);
 
     // 4. MSX: luminância borrada de leve, pro passe final tirar o "alto" dela
     const msx = state.sensor.msx/100;
@@ -1216,24 +1383,9 @@ void main(){
     if(!freeze) computeStats(cur);
     const [lo, hi] = currentLoHi();
 
-    // 6. bloom numa cópia de ≤200 px, raio de 7% do lado maior
+    // 6. bloom
     const bloomAmt = state.sensor.bloom/100;
-    let bloomT = null;
-    if(bloomAmt > 0){
-      const f = Math.min(1, 200/Math.max(cur.w, cur.h));
-      const bw = Math.max(1, Math.round(cur.w*f)), bh = Math.max(1, Math.round(cur.h*f));
-      const a = target('bloomA', bw, bh);
-      setFilter(cur, gl.LINEAR);
-      pass(bloomProg, a, L=>{
-        bindTex(0, cur.tex, L.uTex);
-        gl.uniform2f(L.uSrcTexel, 1/cur.w, 1/cur.h);
-        gl.uniform2f(L.uScale, cur.w/bw, cur.h/bh);
-        gl.uniform1f(L.uLo, lo);
-        gl.uniform1f(L.uHi, hi);
-      });
-      bloomT = target('bloomC', bw, bh);
-      blur(a, target('bloomB', bw, bh), bloomT, 0.07*Math.max(bw, bh));
-    }
+    const bloomT = bloomAmt > 0 ? bloomPass(cur, lo, hi, false) : null;
 
     // 7. passe final na tela
     setFilter(cur, state.sensor.pixel && sd.on ? gl.NEAREST : gl.LINEAR);
@@ -1270,6 +1422,52 @@ void main(){
       gl.uniform1i(L.uInvert, state.palette.invert ? 1 : 0);
       gl.uniform1f(L.uCycles, state.palette.cycles);
       gl.uniform1f(L.uOffset, state.palette.offset/100);
+    });
+    return sd;
+  }
+
+  // looks de vídeo: a mesma cadeia de sensor/difusão/bloom, só que na cor
+  // da foto, e o FRAG_LOOK no lugar da paleta
+  function renderLook(){
+    const W = RW, H = RH, long = Math.max(W, H), g = state.grade;
+    const sd = sensorDims(W, H);
+    const cur = sensorAndDiffusion(srcT, sd, W, H, true);
+    const sharpen = g.sharpen/100;
+    let srcBlur = srcT;
+    if(sharpen > 0){
+      srcBlur = target('pmsxBlur', W, H, true);
+      blur(srcT, target('pmsxPing', W, H, true), srcBlur, 0.003*long);
+    }
+    const bloomAmt = state.sensor.bloom/100;
+    const bloomT = bloomAmt > 0 ? bloomPass(cur, 0, 1, true) : null;
+    setFilter(srcT, gl.LINEAR);
+    setFilter(cur, state.sensor.pixel && sd.on ? gl.NEAREST : gl.LINEAR);
+    const cell = state.noise.size/PREVIEW_LONG;
+    const fpnW = sd.on ? sd.w : PREVIEW_LONG*W/long, fpnH = sd.on ? sd.h : PREVIEW_LONG*H/long;
+    // linhas contadas no lado maior: 480 de vídeo (cctv), 300 px de LCD (camcorder)
+    const lines = state.look === 'cctv' ? 480 : 300;
+    pass(lookProg, null, L=>{
+      bindTex(0, cur.tex, L.uPhoto);
+      bindTex(1, srcT.tex, L.uSrc);
+      bindTex(2, srcBlur.tex, L.uSrcBlur);
+      bindTex(3, bloomT ? bloomT.tex : emptyTex, L.uBloomTex);
+      gl.uniform1i(L.uLook, state.look === 'cctv' ? 1 : 2);
+      gl.uniform1f(L.uSat, g.sat/100);
+      gl.uniform1f(L.uTemp, g.temp/100);
+      gl.uniform1f(L.uTint, g.tint/100);
+      gl.uniform1f(L.uExposure, g.exposure/100);
+      gl.uniform1f(L.uContrast, g.contrast/100);
+      gl.uniform1f(L.uLift, g.lift/100);
+      gl.uniform1f(L.uKeepRed, g.keepRed/100);
+      gl.uniform1f(L.uSharpen, sharpen);
+      gl.uniform1f(L.uLines, g.lines/100);
+      gl.uniform1f(L.uBloom, bloomAmt);
+      gl.uniform1f(L.uGrain, state.noise.grain/100*0.25);
+      gl.uniform2f(L.uGrainCell, cell*long/W, cell*long/H);
+      gl.uniform1f(L.uVignette, state.noise.vignette/100);
+      gl.uniform1f(L.uFpn, state.noise.fpn/100);
+      gl.uniform2f(L.uSensorPx, fpnW, fpnH);
+      gl.uniform2f(L.uLineCount, lines*W/long, lines*H/long);
     });
     return sd;
   }
@@ -1527,14 +1725,14 @@ void main(){
       osdCorners(c, m, m, o.w - m, o.h - m, u*6);
       const ix = m + u*1.4, iy = m + u*1.2, rx = o.w - m - u*1.4;
       osdText(o, t.ircamTitle, ix, iy, fs, 'left', 'top');
-      const ref = (det.persons.length && boxTempC(det.persons[0])) || o.temps.max;
+      const ref = (o.det.persons.length && boxTempC(o.det.persons[0])) || o.temps.max;
       const letter = state.scale.unit === 'K' ? 'K' : state.scale.unit;
       osdText(o, `TEMP REF: ${convertTemp(ref).toFixed(1)}${letter}`, rx, iy, fs, 'right', 'top');
       osdText(o, `DELTA: ${(convertTemp(ref) - convertTemp(o.temps.min)).toFixed(1)}`, rx, iy + fs*1.05, fs, 'right', 'top');
       osdText(o, t.ircamTarget, ix, o.h - m - u*1.2, fs*1.45, 'left', 'bottom');
       osdText(o, t.ircamStatus, rx, o.h - m - u*1.2, fs*0.95, 'right', 'bottom');
       c.lineWidth = lw*0.8;
-      det.persons.slice(0, 3).forEach(b=>{
+      o.det.persons.slice(0, 3).forEach(b=>{
         const p = boxPx(o, b);
         c.strokeRect(p.x0, p.y0, p.x1 - p.x0, p.y1 - p.y0);
         osdCross(c, (p.x0 + p.x1)/2, (p.y0 + p.y1)/2, u*2.2);
@@ -1555,7 +1753,7 @@ void main(){
       c.strokeStyle = white; c.lineWidth = lw;
       [[u*2.6, hy], [W - u*2.6, hy], [u*2.6, fy], [W - u*2.6, fy]].forEach(([x, y])=>osdCross(c, x, y, u));
       const labels = [];
-      det.persons.slice(0, 4).forEach((b, i)=>{
+      o.det.persons.slice(0, 4).forEach((b, i)=>{
         const p = boxPx(o, b), pad = u*1.2;
         const x0 = p.x0 - pad, y0 = p.y0 - pad, x1 = p.x1 + pad, y1 = p.y1 + pad;
         c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = lw;
@@ -1582,7 +1780,7 @@ void main(){
         }
         labels.push({ x0, x1, y:by + bh/2 });
         // cantoneiras na cabeça: rosto detectado, ou o topo da caixa
-        const face = det.faces.find(f=>insideBox(f, b));
+        const face = o.det.faces.find(f=>insideBox(f, b));
         const hb = face ? boxPx(o, face) : { x0:(p.x0 + p.x1)/2 - (p.x1 - p.x0)*0.18, x1:(p.x0 + p.x1)/2 + (p.x1 - p.x0)*0.18, y0:p.y0, y1:p.y0 + (p.y1 - p.y0)*0.18 };
         c.strokeStyle = o.col; c.lineWidth = lw*1.6;
         osdCorners(c, hb.x0 - u*0.6, hb.y0 - u*0.6, hb.x1 + u*0.6, hb.y1 + u*0.6, u*1.4);
@@ -1611,13 +1809,13 @@ void main(){
       const cols = [o.col, '#3b5bff', '#ff4fd8', '#ffd23b'];
       c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = lw;
       osdCorners(c, u*2.5, u*2.5, W - u*2.5, H - barH - u*2.5, u*3.5);
-      const cam = osdTag(o, t.survCam, u*4, u*4, fs*1.2, 'rgba(0,0,0,.45)', '#fff', 'left');
+      const cam = osdTag(o, nthName(t.survCam, o.idx), u*4, u*4, fs*1.2, 'rgba(0,0,0,.45)', '#fff', 'left');
       c.strokeStyle = '#fff'; c.strokeRect(cam.x, cam.y, cam.w, cam.h);
       c.fillStyle = '#ff3b30';
       c.beginPath(); c.arc(W - u*9, u*4 + fs*0.6, fs*0.3, 0, Math.PI*2); c.fill();
       osdText(o, 'REC', W - u*8.2, u*4 + fs*0.62, fs, 'left', 'middle', '#fff');
 
-      const persons = det.persons.slice(0, 4);
+      const persons = o.det.persons.slice(0, 4);
       const colorOf = b=>cols[Math.max(0, persons.findIndex(pp=>insideBox(b, pp))) % cols.length];
       persons.forEach((b, i)=>{
         const p = boxPx(o, b), col = cols[i % cols.length];
@@ -1631,17 +1829,17 @@ void main(){
         else osdText(o, match, p.x0 + u*0.3, tag.y + tag.h + fs*0.2, fs*0.8, 'left', 'top', '#fff');
       });
       c.lineWidth = lw; c.setLineDash([u*0.45, u*0.35]);
-      det.faces.forEach(f=>{ const p = boxPx(o, f); c.strokeStyle = colorOf(f); c.strokeRect(p.x0, p.y0, p.x1 - p.x0, p.y1 - p.y0); });
+      o.det.faces.forEach(f=>{ const p = boxPx(o, f); c.strokeStyle = colorOf(f); c.strokeRect(p.x0, p.y0, p.x1 - p.x0, p.y1 - p.y0); });
       c.setLineDash([]);
-      det.clothes.forEach((cb, k)=>{
+      o.det.clothes.forEach((cb, k)=>{
         const p = boxPx(o, cb), col = colorOf(cb), pad = u*0.6;
         c.strokeStyle = col; c.lineWidth = lw*0.9;
         c.strokeRect(p.x0 + pad, p.y0 + pad, p.x1 - p.x0 - pad*2, p.y1 - p.y0 - pad*2);
         osdTag(o, k === 0 ? t.survCloth : `ITEM ${pad2(k+1)}`, p.x0 + pad, p.y1 - pad - fs*1.05, fs*0.85, col, inkOn(col), 'left');
       });
       // recorte do rosto principal, ligado à caixa, com o cartão embaixo
-      const face = det.faces[0];
-      if(face && det.thumb){
+      const face = o.det.faces[0];
+      if(face && o.det.thumb){
         const fp = boxPx(o, face), cc = '#3b5bff';
         const tw = Math.min(W*0.27, H*0.3), th = tw*1.05;
         const right = (fp.x0 + fp.x1)/2 < W/2;
@@ -1651,7 +1849,7 @@ void main(){
         if(ft != null) lines.push('TEMP: ' + tempStr(ft, 1));
         const lh = fs*1.05, cardH = lh*(lines.length + 1.6) + fs*0.6;
         const ty = Math.max(u*9, Math.min(fp.y0 - th*0.25, H - barH - th - cardH - u*3));
-        c.drawImage(det.thumb, tx, ty, tw, th);
+        c.drawImage(o.det.thumb, tx, ty, tw, th);
         c.strokeStyle = cc; c.lineWidth = lw*1.2; c.strokeRect(tx, ty, tw, th);
         const fy = (fp.y0 + fp.y1)/2, fx = right ? fp.x1 : fp.x0, ex = right ? tx : tx + tw, mx = (fx + ex)/2;
         c.lineWidth = lw;
@@ -1682,9 +1880,10 @@ void main(){
     // ref: CCTV — etiqueta da câmera e data/hora em caixas pretas
     cctv(o){
       const u = o.u, t = state.osd.text, fs = u*3, bh = fs*1.15;
-      osdTag(o, t.cctvCam, u*3.2, u*3.2, fs, '#000', o.col, 'left');
-      osdTag(o, t.cctvTime, o.w - u*3.2, o.h - u*3.2 - bh, fs, '#000', o.col, 'right');
-      osdTag(o, t.cctvDate, o.w - u*3.2, o.h - u*3.2 - bh*2, fs, '#000', o.col, 'right');
+      osdTag(o, nthName(t.cctvCam, o.idx), u*3.2, u*3.2, fs, '#000', o.col, 'left');
+      // quadro sem sinal: a data "quebrada" da referência
+      osdTag(o, o.nosignal ? '99:99:99' : t.cctvTime, o.w - u*3.2, o.h - u*3.2 - bh, fs, '#000', o.col, 'right');
+      osdTag(o, o.nosignal ? '31/12/1999' : t.cctvDate, o.w - u*3.2, o.h - u*3.2 - bh*2, fs, '#000', o.col, 'right');
     },
 
     // ref: visor de camcorder — bateria, modo, REC, timecode, zoom W–T, FN
@@ -1696,14 +1895,16 @@ void main(){
       c.strokeRect(x, y - fs*0.3, fs*1.1, fs*0.6);
       c.fillRect(x + fs*1.1, y - fs*0.14, fs*0.14, fs*0.28);
       c.fillRect(x + fs*0.12, y - fs*0.18, fs*0.7, fs*0.36);
-      osdText(o, t.camBattery, x + fs*1.45, y, fs, 'left', 'middle', o.col);
+      osdText(o, bumpNum(t.camBattery, o.idx), x + fs*1.45, y, fs, 'left', 'middle', o.col);
       osdText(o, t.camMode, W*0.45, y, fs, 'left', 'middle', o.col);
       osdText(o, 'REC', W*0.56, y, fs, 'left', 'middle', '#ff3b2f');
-      osdText(o, t.camTime, W - u*4.5, y, fs, 'right', 'middle', o.col);
+      osdText(o, addSeconds(t.camTime, o.idx ? (o.idx*97) % 300 : 0), W - u*4.5, y, fs, 'right', 'middle', o.col);
       const y2 = y + fs*1.1, bx = x + fs*0.75, bw = fs*2.2, bh = fs*0.42;
       osdText(o, 'W', x, y2, fs*0.9, 'left', 'middle', o.col);
       c.strokeStyle = o.col; c.strokeRect(bx, y2 - bh/2, bw, bh);
-      c.fillStyle = o.col; c.fillRect(bx, y2 - bh/2, bw*Math.max(0.04, t.camZoom/100), bh);
+      // na grade, a barra segue o zoom do quadro
+      const zoomPct = o.zoom != null ? Math.min(100, (o.zoom - 1)/5*100) : t.camZoom;
+      c.fillStyle = o.col; c.fillRect(bx, y2 - bh/2, bw*Math.max(0.04, zoomPct/100), bh);
       osdText(o, 'T', bx + bw + fs*0.2, y2, fs*0.9, 'left', 'middle', o.col);
       c.shadowColor = 'transparent';
       const fw = fs*1.7, fh = fs*0.95, fx = W - fw - u*4.5, fy = H - fh - u*4.5;
@@ -1713,27 +1914,147 @@ void main(){
     },
   };
 
-  function drawOSD(ctx, w, h){
+  // "205min" + 1 → "206min"; o primeiro número do texto
+  const bumpNum = (str, d)=>d ? String(str).replace(/\d+/, m=>String(+m + d).padStart(m.length, '0')) : String(str);
+  // timecode "H:MM:SS" + s segundos
+  function addSeconds(tc, sec){
+    const parts = String(tc).split(':').map(Number);
+    if(!sec || parts.some(n=>!Number.isFinite(n))) return String(tc);
+    let total = parts.reduce((acc, n)=>acc*60 + n, 0) + sec;
+    const out = [];
+    for(let i=parts.length-1; i>0; i--){ out.unshift(pad2(total % 60)); total = Math.floor(total/60); }
+    out.unshift(String(total));
+    return out.join(':');
+  }
+  // caixas da imagem levadas pro espaço do quadro (crop em coordenadas 0–1)
+  function mapDetections(crop){
+    const sw = crop.x1 - crop.x0, sh = crop.y1 - crop.y0;
+    const m = b=>{
+      const r = { x0:(b.x0 - crop.x0)/sw, y0:(b.y0 - crop.y0)/sh, x1:(b.x1 - crop.x0)/sw, y1:(b.y1 - crop.y0)/sh, orig:b };
+      return r.x1 <= 0 || r.x0 >= 1 || r.y1 <= 0 || r.y0 >= 1 ? null : r;
+    };
+    const persons = det.persons.map(m).filter(Boolean), faces = det.faces.map(m).filter(Boolean);
+    return { persons, faces, clothes:det.clothes.map(m).filter(Boolean), thumb: faces.length && faces[0].orig === det.faces[0] ? det.thumb : null };
+  }
+  const NO_DET = { persons:[], faces:[], clothes:[], thumb:null };
+
+  // cell = { idx, crop, zoom, nosignal } na grade; sem cell = quadro único
+  function drawOSD(ctx, w, h, cell){
     const draw = OSD_DRAW[state.osd.template];
     if(!draw) return;
+    const o = { ctx, w, h, u:Math.max(w, h)/100*state.osd.size/100, col:state.osd.color, temps:sceneTempsC(),
+      idx:0, zoom:null, nosignal:false, det };
+    if(cell){
+      o.idx = cell.idx; o.zoom = cell.zoom; o.nosignal = cell.nosignal;
+      o.det = cell.nosignal ? NO_DET : mapDetections(cell.crop);
+    }
     ctx.save();
-    draw({ ctx, w, h, u:Math.max(w, h)/100*state.osd.size/100, col:state.osd.color, temps:sceneTempsC() });
+    draw(o);
     ctx.restore();
   }
-  // OSD + escala. Em "baixa resolução" o OSD é desenhado a 720 px e
-  // ampliado, como a interface de uma câmera de vídeo.
+
+  /* ---------------------------------------------------------------------
+     GRADE MULTICÂMERA
+     A imagem inteira é renderizada uma vez (glCanvas) e cada quadro copia
+     dela um enquadramento, com o próprio OSD por cima.
+  --------------------------------------------------------------------- */
+  const LAYOUTS = { '1x1':[1,1], '2x2':[2,2], '2x3':[2,3], '3x2':[3,2] };
+  function gridCount(){ const [c, r] = LAYOUTS[state.grid.layout]; return c*r; }
+  // quadros em px da saída (w×h) + o recorte de cada um na imagem
+  function gridCells(w, h){
+    const [cols, rows] = LAYOUTS[state.grid.layout];
+    if(cols*rows === 1) return null;
+    const gap = state.grid.gap/1000*Math.max(w, h);
+    const cw = (w - gap*(cols + 1))/cols, ch = (h - gap*(rows + 1))/rows;
+    const out = [];
+    for(let r=0; r<rows; r++) for(let c=0; c<cols; c++){
+      const idx = r*cols + c, cell = state.grid.cells[idx];
+      const x = gap + c*(cw + gap), y = gap + r*(ch + gap);
+      // recorte que cobre o quadro, com o zoom dele, sem sair da imagem
+      const asp = cw/ch, zoom = Math.max(1, cell.zoom);
+      const sw = Math.min(w, h*asp)/zoom, sh = sw/asp;
+      const sx = Math.min(w - sw, Math.max(0, cell.x*w - sw/2)), sy = Math.min(h - sh, Math.max(0, cell.y*h - sh/2));
+      out.push({ idx, x, y, w:cw, h:ch, zoom, nosignal:cell.mode === 'nosignal',
+        src:{ sx, sy, sw, sh }, crop:{ x0:sx/w, y0:sy/h, x1:(sx + sw)/w, y1:(sy + sh)/h } });
+    }
+    return out;
+  }
+  // quadro azul "sem sinal" com o texto numa caixa contornada
+  function drawNoSignal(ctx, cell){
+    ctx.fillStyle = '#0b17e8';
+    ctx.fillRect(cell.x, cell.y, cell.w, cell.h);
+    const text = state.grid.noSignal;
+    if(!text) return;
+    const fs = Math.max(cell.w, cell.h)*0.06;
+    ctx.font = osdFont(fs);
+    const tw = ctx.measureText(text).width, bw = tw + fs*1.2, bh = fs*1.7;
+    const cx = cell.x + cell.w/2, cy = cell.y + cell.h/2;
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1, fs*0.07);
+    ctx.strokeRect(cx - bw/2, cy - bh/2, bw, bh);
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, cx, cy + fs*0.05);
+  }
+  // enquadramentos automáticos: o 1º quadro é a imagem toda; os outros
+  // miram nos rostos e pessoas detectados, depois em pontos fixos.
+  // shuffle = sorteia pontos e zoom (o modo de cada quadro é mantido)
+  function autoCells(n, shuffle){
+    const pts = [];
+    det.faces.forEach(f=>pts.push({ x:(f.x0 + f.x1)/2, y:(f.y0 + f.y1)/2, zoom:Math.min(6, Math.max(1.6, 0.45/Math.max(0.02, f.y1 - f.y0))) }));
+    det.persons.forEach(p=>pts.push({ x:(p.x0 + p.x1)/2, y:(p.y0 + p.y1)/2, zoom:Math.min(3, Math.max(1.1, 0.8/Math.max(p.y1 - p.y0, p.x1 - p.x0))) }));
+    [[0.5,0.35,2.2],[0.3,0.62,1.8],[0.7,0.5,2.6],[0.5,0.78,1.6],[0.35,0.3,3.2],[0.65,0.7,2]].forEach(([x, y, zoom])=>pts.push({ x, y, zoom }));
+    if(shuffle) for(let i=pts.length-1; i>0; i--){ const j = Math.floor(Math.random()*(i+1)); [pts[i], pts[j]] = [pts[j], pts[i]]; }
+    const old = state.grid.cells;
+    const cells = [];
+    for(let i=0; i<n; i++){
+      const mode = old[i] ? old[i].mode : (n >= 4 && i === 2 ? 'nosignal' : 'image');
+      if(i === 0){ cells.push({ mode, x:0.5, y:0.5, zoom:1 }); continue; }
+      const p = pts[(i - 1) % pts.length];
+      const k = shuffle ? 0.8 + Math.random()*0.5 : 1;
+      cells.push({ mode, x:p.x, y:p.y, zoom:Math.min(6, Math.max(1, p.zoom*k)) });
+    }
+    return cells;
+  }
+
+  // imagem (com grade) + OSD + escala. Em "baixa resolução" o OSD é
+  // desenhado a 720 px e ampliado, como a interface de uma câmera de vídeo.
   function drawOverlay(ctx, w, h, clear){
     if(clear) ctx.clearRect(0, 0, w, h);
-    if(state.osd.lowres && OSD_DRAW[state.osd.template]){
-      const f = Math.min(1, 720/Math.max(w, h));
-      const off = document.createElement('canvas');
-      off.width = Math.max(1, Math.round(w*f)); off.height = Math.max(1, Math.round(h*f));
-      drawOSD(off.getContext('2d'), off.width, off.height);
+    const cells = gridCells(w, h);
+    if(cells){
       ctx.save();
-      ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(off, 0, 0, w, h);
+      ctx.fillStyle = state.grid.gapColor;
+      ctx.fillRect(0, 0, w, h);
+      ctx.imageSmoothingEnabled = !state.sensor.pixel;
+      ctx.imageSmoothingQuality = 'high';
+      cells.forEach(cell=>{
+        if(cell.nosignal) drawNoSignal(ctx, cell);
+        else ctx.drawImage(glCanvas, cell.src.sx, cell.src.sy, cell.src.sw, cell.src.sh, cell.x, cell.y, cell.w, cell.h);
+      });
       ctx.restore();
-    } else drawOSD(ctx, w, h);
+    }
+    if(OSD_DRAW[state.osd.template]){
+      const f = state.osd.lowres ? Math.min(1, 720/Math.max(w, h)) : 1;
+      let target = ctx, off = null;
+      if(f < 1){
+        off = document.createElement('canvas');
+        off.width = Math.max(1, Math.round(w*f)); off.height = Math.max(1, Math.round(h*f));
+        target = off.getContext('2d');
+      }
+      if(!cells) drawOSD(target, w*f, h*f, null);
+      else cells.forEach(cell=>{
+        target.save();
+        target.translate(cell.x*f, cell.y*f);
+        target.beginPath(); target.rect(0, 0, cell.w*f, cell.h*f); target.clip();
+        drawOSD(target, cell.w*f, cell.h*f, cell);
+        target.restore();
+      });
+      if(off){
+        ctx.save();
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(off, 0, 0, w, h);
+        ctx.restore();
+      }
+    }
     drawScale(ctx, w, h, false);
   }
 
@@ -1862,6 +2183,8 @@ void main(){
     mask.mode = mode === 'fast' ? 1 : 2;
     computeDetections(data, w, h, mask.mode);
     syncOsdHint();
+    // enquadramentos automáticos passam a mirar nas pessoas detectadas
+    if(state.grid.auto){ state.grid.cells = autoCells(gridCount(), false); syncGridUI(); }
     const cover = person/n;
     setSegStatus(cover < 0.005 ? 'nenhuma pessoa encontrada nesta imagem.' : `pessoa detectada (${Math.round(cover*100)}% da imagem).`);
     requestRender();
@@ -1962,6 +2285,7 @@ void main(){
     return { min:heatToC(mn), max:heatToC(mx) };
   }
   function boxTempC(b){
+    b = b.orig || b; // caixa mapeada pra um quadro da grade → a da imagem
     const v = stats.samples;
     if(!v) return null;
     const W = stats.sw, H = stats.sh;
@@ -1976,7 +2300,8 @@ void main(){
   }
   function syncSegUI(){
     const mode = state.seg.mode;
-    $('segControls').style.display = mode === 'off' ? 'none' : '';
+    // temperaturas e fundo só valem no look térmico
+    $('segControls').style.display = mode === 'off' || state.look !== 'thermal' ? 'none' : '';
     document.querySelectorAll('.seg-detail').forEach(el=>el.style.display = mode === 'detail' ? '' : 'none');
     document.querySelectorAll('.seg-fast').forEach(el=>el.style.display = mode === 'fast' ? '' : 'none');
     $('bgColorRow').style.display = state.seg.bg === 3 ? '' : 'none';
@@ -2004,6 +2329,7 @@ void main(){
     const sync = ()=>group.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.v === String(get())));
     group.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>{ set(b.dataset.v); sync(); requestRender(); }));
     sync();
+    return { sync };
   }
   const pct = v => v + '%';
 
@@ -2033,10 +2359,12 @@ void main(){
   const sensorRes = $('sensorRes');
   sensorRes.value = state.sensor.res;
   sensorRes.addEventListener('change', ()=>{ state.sensor.res = +sensorRes.value; requestRender(); });
-  bindToggle('upscaleGroup', ()=>state.sensor.pixel ? 'pixel' : 'smooth', v=>state.sensor.pixel = v === 'pixel');
-  bindRange('diffusion', ()=>state.sensor.diffusion, v=>state.sensor.diffusion = v, pct);
-  bindRange('msx', ()=>state.sensor.msx, v=>state.sensor.msx = v, pct);
-  bindRange('bloom', ()=>state.sensor.bloom, v=>state.sensor.bloom = v, pct);
+  // controles de sensor e ruído: cada look guarda os seus (ver switchLook)
+  const sharedCtls = [{ sync(){ sensorRes.value = state.sensor.res; } }];
+  sharedCtls.push(bindToggle('upscaleGroup', ()=>state.sensor.pixel ? 'pixel' : 'smooth', v=>state.sensor.pixel = v === 'pixel'));
+  sharedCtls.push(bindRange('diffusion', ()=>state.sensor.diffusion, v=>state.sensor.diffusion = v, pct));
+  sharedCtls.push(bindRange('msx', ()=>state.sensor.msx, v=>state.sensor.msx = v, pct));
+  sharedCtls.push(bindRange('bloom', ()=>state.sensor.bloom, v=>state.sensor.bloom = v, pct));
 
   // faixa: mexer em nível/span desliga o automático
   const rangeAuto = bindCheck('rangeAuto', ()=>state.range.auto, v=>{
@@ -2140,10 +2468,10 @@ void main(){
   bindRange('offset', ()=>state.palette.offset, v=>state.palette.offset = v, pct);
 
   // ruído
-  bindRange('grain', ()=>state.noise.grain, v=>state.noise.grain = v, pct);
-  bindRange('grainSize', ()=>state.noise.size, v=>state.noise.size = v, v=>v + 'px');
-  bindRange('vignette', ()=>state.noise.vignette, v=>state.noise.vignette = v, pct);
-  bindRange('fpn', ()=>state.noise.fpn, v=>state.noise.fpn = v, pct);
+  sharedCtls.push(bindRange('grain', ()=>state.noise.grain, v=>state.noise.grain = v, pct));
+  sharedCtls.push(bindRange('grainSize', ()=>state.noise.size, v=>state.noise.size = v, v=>v + 'px'));
+  sharedCtls.push(bindRange('vignette', ()=>state.noise.vignette, v=>state.noise.vignette = v, pct));
+  sharedCtls.push(bindRange('fpn', ()=>state.noise.fpn, v=>state.noise.fpn = v, pct));
 
   // escala
   bindCheck('scaleShow', ()=>state.scale.show, v=>state.scale.show = v);
@@ -2215,6 +2543,96 @@ void main(){
     document.fonts.load(`20px ${OSD_FONTS[state.osd.font].css}`).then(()=>requestRender()).catch(()=>{});
   }
   syncOsdUI();
+
+  // look: troca sensor/ruído/cores junto, guardando os do look anterior
+  const lookStore = {};
+  const gradeCtls = [];
+  function switchLook(next){
+    if(next === state.look) return;
+    lookStore[state.look] = { sensor:{ ...state.sensor }, noise:{ ...state.noise }, grade:{ ...state.grade } };
+    const saved = lookStore[next] || (LOOK_DEFAULTS[next] && JSON.parse(JSON.stringify(LOOK_DEFAULTS[next])));
+    if(saved){
+      Object.assign(state.sensor, saved.sensor);
+      Object.assign(state.noise, saved.noise);
+      if(next !== 'thermal') state.grade = { ...saved.grade };
+    }
+    state.look = next;
+    sharedCtls.forEach(c=>c.sync());
+    gradeCtls.forEach(c=>c.sync());
+    syncLookUI();
+  }
+  // painéis que só fazem sentido no térmico somem nos looks de vídeo
+  function syncLookUI(){
+    const thermal = state.look === 'thermal';
+    ['panelSource', 'panelRange', 'panelPalette', 'panelScale', 'msxRow'].forEach(id=>{ $(id).style.display = thermal ? '' : 'none'; });
+    $('panelLook').style.display = thermal ? 'none' : '';
+    $('segControls').style.display = thermal && state.seg.mode !== 'off' ? '' : 'none';
+    $('lkKeepRed').closest('.row').style.display = state.look === 'cctv' ? '' : 'none';
+  }
+  bindToggle('lookGroup', ()=>state.look, v=>switchLook(v));
+  [['lkSat','sat', pct], ['lkTemp','temp'], ['lkTint','tint'], ['lkExposure','exposure'], ['lkContrast','contrast'],
+   ['lkLift','lift', pct], ['lkKeepRed','keepRed', pct], ['lkSharpen','sharpen', pct], ['lkLines','lines', pct]].forEach(([id, key, fmt])=>{
+    gradeCtls.push(bindRange(id, ()=>state.grade[key], v=>state.grade[key] = v, fmt || (v=>(v > 0 ? '+' : '') + v)));
+  });
+  syncLookUI();
+
+  // grade multicâmera
+  const gridLayout = $('gridLayout');
+  gridLayout.value = state.grid.layout;
+  state.grid.cells = autoCells(gridCount(), false);
+  const curCell = ()=>state.grid.cells[state.grid.sel];
+  // mexer num quadro tira a grade do modo automático (a detecção nova não
+  // refaz mais os enquadramentos)
+  const cellEdited = ()=>{ state.grid.auto = false; };
+  const cellCtls = [
+    bindToggle('cellMode', ()=>curCell().mode, v=>{ curCell().mode = v; cellEdited(); }),
+    bindRange('cellZoom', ()=>Math.round(curCell().zoom*100), v=>{ curCell().zoom = v/100; cellEdited(); }, v=>(v/100).toFixed(1) + '×'),
+    bindRange('cellX', ()=>Math.round(curCell().x*100), v=>{ curCell().x = v/100; cellEdited(); }, pct),
+    bindRange('cellY', ()=>Math.round(curCell().y*100), v=>{ curCell().y = v/100; cellEdited(); }, pct),
+  ];
+  function buildCellSel(){
+    const host = $('cellSel');
+    host.innerHTML = '';
+    for(let i=0; i<gridCount(); i++){
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = i + 1;
+      b.classList.toggle('active', i === state.grid.sel);
+      b.setAttribute('aria-label', `Quadro ${i+1}`);
+      b.addEventListener('click', ()=>{
+        state.grid.sel = i;
+        host.querySelectorAll('button').forEach((x, k)=>x.classList.toggle('active', k === i));
+        cellCtls.forEach(c=>c.sync());
+      });
+      host.appendChild(b);
+    }
+  }
+  function syncGridUI(){
+    $('gridControls').style.display = gridCount() > 1 ? '' : 'none';
+    state.grid.sel = Math.min(state.grid.sel, gridCount() - 1);
+    buildCellSel();
+    cellCtls.forEach(c=>c.sync());
+  }
+  gridLayout.addEventListener('change', ()=>{
+    state.grid.layout = gridLayout.value;
+    state.grid.auto = true;
+    state.grid.cells = autoCells(gridCount(), false);
+    syncGridUI();
+    requestRender();
+  });
+  bindRange('gridGap', ()=>state.grid.gap, v=>state.grid.gap = v, v=>(v/10).toFixed(1) + '%');
+  const gridGapColor = $('gridGapColor');
+  gridGapColor.value = state.grid.gapColor;
+  gridGapColor.addEventListener('input', ()=>{ state.grid.gapColor = gridGapColor.value; requestRender(); });
+  const gridNoSignal = $('gridNoSignal');
+  gridNoSignal.value = state.grid.noSignal;
+  gridNoSignal.addEventListener('input', ()=>{ state.grid.noSignal = gridNoSignal.value; requestRender(); });
+  $('btnShuffleCells').addEventListener('click', ()=>{
+    state.grid.cells = autoCells(gridCount(), true);
+    state.grid.auto = false;
+    cellCtls.forEach(c=>c.sync());
+    requestRender();
+  });
+  syncGridUI();
   bindToggle('scalePosGroup', ()=>state.scale.pos, v=>state.scale.pos = v);
   bindToggle('scaleUnitGroup', ()=>state.scale.unit, v=>state.scale.unit = v);
   bindToggle('scaleTextGroup', ()=>state.scale.text, v=>state.scale.text = v);
@@ -2648,7 +3066,7 @@ void main(){
   }
   // cores da paleta atual + fundo + as últimas escolhidas
   function usedColors(){
-    const list = [...sortedStops().map(s=>s.color), state.seg.bgColor, state.osd.color, ...recentColors()];
+    const list = [...sortedStops().map(s=>s.color), state.seg.bgColor, state.osd.color, state.grid.gapColor, ...recentColors()];
     const seen = new Set();
     return list.map(c=>normalizeHex(c)).filter(c=>c && !seen.has(c) && seen.add(c)).slice(0, 14);
   }
