@@ -197,6 +197,7 @@
   input[type=number]{ width:72px; font-variant-numeric:tabular-nums; }
   select:hover, input[type=number]:hover{ border-color:var(--text); }
   input[type=number]:focus, select:focus{ outline:none; border-color:var(--text); }
+  input[type=number]:disabled{ opacity:.5; }
   .hint{ font-size:10px; color:var(--muted); margin:2px 0 8px; line-height:1.45; }
   .hint:empty{ display:none; }
   .subhead{
@@ -454,8 +455,43 @@
       <p class="hint">de onde vem a "temperatura" de cada pixel antes da paleta.</p>
       <div class="row"><label for="srcRed">luminância → vermelho</label><input type="range" id="srcRed" autocomplete="off" min="0" max="100"><span class="val" id="srcRedVal"></span></div>
       <div class="row"><label for="srcSkin">pele aquece</label><input type="range" id="srcSkin" autocomplete="off" min="0" max="100"><span class="val" id="srcSkinVal"></span></div>
+      <div class="row"><label for="srcLights">luzes esquentam</label><input type="range" id="srcLights" autocomplete="off" min="0" max="100"><span class="val" id="srcLightsVal"></span></div>
       <div class="check"><input type="checkbox" id="srcInvert"><label for="srcInvert">inverter (escuro = quente)</label></div>
-      <p class="hint">no canal vermelho a pele tende a ficar mais quente que na luminância. "pele aquece" detecta tons de pele pela cor e esquenta essas áreas mesmo com a fonte invertida.</p>
+      <p class="hint">no canal vermelho a pele tende a ficar mais quente que na luminância. "pele aquece" detecta tons de pele pela cor e esquenta essas áreas mesmo com a fonte invertida. "luzes esquentam" deixa as áreas muito claras (lâmpadas, telas) quentes em qualquer modo.</p>
+    </details>
+
+    <details class="panel" name="painel">
+      <summary><h2>Pessoa (IA)</h2></summary>
+      <div class="toggle-group" id="segModeGroup" style="margin-bottom:8px;">
+        <button data-v="off" class="active">desligada</button>
+        <button data-v="fast">rápida</button>
+        <button data-v="detail">detalhada</button>
+      </div>
+      <p class="hint" id="segStatus" role="status"></p>
+      <div id="segControls" style="display:none;">
+        <div class="subhead">temperatura por área</div>
+        <div class="row seg-detail"><label for="tFace">pele do rosto</label><input type="range" id="tFace" autocomplete="off" min="100" max="420"><span class="val" id="tFaceVal"></span></div>
+        <div class="row seg-detail"><label for="tBody">pele do corpo</label><input type="range" id="tBody" autocomplete="off" min="100" max="420"><span class="val" id="tBodyVal"></span></div>
+        <div class="row seg-detail"><label for="tCloth">roupa</label><input type="range" id="tCloth" autocomplete="off" min="100" max="420"><span class="val" id="tClothVal"></span></div>
+        <div class="row seg-detail"><label for="tHair">cabelo</label><input type="range" id="tHair" autocomplete="off" min="100" max="420"><span class="val" id="tHairVal"></span></div>
+        <div class="row seg-fast"><label for="tPerson">pessoa</label><input type="range" id="tPerson" autocomplete="off" min="100" max="420"><span class="val" id="tPersonVal"></span></div>
+        <div class="row"><label for="tBg">fundo</label><input type="range" id="tBg" autocomplete="off" min="100" max="420"><span class="val" id="tBgVal"></span></div>
+        <div class="row"><label for="photoInfl">influência da foto</label><input type="range" id="photoInfl" autocomplete="off" min="0" max="100"><span class="val" id="photoInflVal"></span></div>
+        <p class="hint">a "fonte do calor" continua valendo como variação dentro de cada área: em 0% cada área fica com uma temperatura só.</p>
+        <div class="subhead">fundo</div>
+        <div class="row"><label for="bgMode">tratamento</label>
+          <select id="bgMode">
+            <option value="0">térmico (paleta)</option>
+            <option value="1">foto original</option>
+            <option value="2">foto azulada</option>
+            <option value="3">cor chapada</option>
+            <option value="4">transparente</option>
+          </select>
+        </div>
+        <div class="row" id="bgColorRow"><label for="bgColor">cor</label><input type="color" id="bgColor" aria-label="Cor do fundo"></div>
+        <div class="row" id="edgeRow"><label for="edge">borda</label><input type="range" id="edge" autocomplete="off" min="0" max="100"><span class="val" id="edgeVal"></span></div>
+      </div>
+      <p class="hint">roda no seu navegador (MediaPipe): a foto não sai do computador. a rápida (0,25 MB) só recorta a pessoa; a detalhada (16 MB) separa cabelo, pele e roupa. o primeiro uso também baixa o motor da IA (~12 MB).</p>
     </details>
 
     <details class="panel" name="painel">
@@ -477,7 +513,8 @@
       </div>
       <div class="row"><label for="diffusion">difusão</label><input type="range" id="diffusion" autocomplete="off" min="0" max="100"><span class="val" id="diffusionVal"></span></div>
       <div class="row"><label for="msx">detalhe msx</label><input type="range" id="msx" autocomplete="off" min="0" max="100"><span class="val" id="msxVal"></span></div>
-      <p class="hint">câmeras térmicas reais têm de 80 a 640 px e o calor se espalha (difusão). o msx soma as bordas da foto original por cima, como nas câmeras FLIR.</p>
+      <div class="row"><label for="bloom">bloom de calor</label><input type="range" id="bloom" autocomplete="off" min="0" max="100"><span class="val" id="bloomVal"></span></div>
+      <p class="hint">câmeras térmicas reais têm de 80 a 640 px e o calor se espalha (difusão). o msx soma as bordas da foto original por cima, como nas câmeras FLIR. o bloom faz as áreas mais quentes vazarem um halo em volta.</p>
     </details>
 
     <details class="panel" name="painel">
@@ -511,7 +548,8 @@
       <div class="row"><label for="grain">grão</label><input type="range" id="grain" autocomplete="off" min="0" max="100"><span class="val" id="grainVal"></span></div>
       <div class="row"><label for="grainSize">tamanho do grão</label><input type="range" id="grainSize" autocomplete="off" min="1" max="8"><span class="val" id="grainSizeVal"></span></div>
       <div class="row"><label for="vignette">vinheta</label><input type="range" id="vignette" autocomplete="off" min="0" max="100"><span class="val" id="vignetteVal"></span></div>
-      <p class="hint">o grão entra na temperatura, antes da paleta, então vira pontilhado colorido. a vinheta esfria os cantos.</p>
+      <div class="row"><label for="fpn">listras do sensor</label><input type="range" id="fpn" autocomplete="off" min="0" max="100"><span class="val" id="fpnVal"></span></div>
+      <p class="hint">o grão entra na temperatura, antes da paleta, então vira pontilhado colorido. a vinheta esfria os cantos. as listras imitam o padrão fixo de linhas e colunas dos sensores térmicos baratos.</p>
     </details>
 
     <details class="panel" name="painel">
@@ -524,8 +562,10 @@
           <button data-v="bottom">embaixo</button>
         </div>
       </div>
+      <div class="check"><input type="checkbox" id="scaleAuto"><label for="scaleAuto">temperaturas da cena</label></div>
       <div class="row"><label for="tmin">mín. (°C)</label><input type="number" id="tmin" step="0.1" autocomplete="off"></div>
       <div class="row"><label for="tmax">máx. (°C)</label><input type="number" id="tmax" step="0.1" autocomplete="off"></div>
+      <p class="hint">com "temperaturas da cena" a escala mostra a faixa real da imagem, na mesma régua das temperaturas de "pessoa (ia)".</p>
       <div class="row"><label>unidade</label>
         <div class="toggle-group" id="scaleUnitGroup">
           <button data-v="C" class="active">°C</button>
@@ -607,13 +647,18 @@
     img: null,
     crop: { ratio:'original', scale:1, offX:0, offY:0, rotation:0 },
     cropApplied: false,
-    src: { red:0, skin:0, invert:false },
-    sensor: { res:320, pixel:false, diffusion:15, msx:25 },
+    src: { red:0, skin:0, lights:0, invert:false },
+    // temperaturas em °C; a régua calor↔°C é T_MIN_C..T_MIN_C+T_SPAN_C
+    seg: { mode:'off', tFace:36.5, tBody:34.5, tCloth:29, tHair:27.5, tPerson:33, tBg:20, photo:35, bg:0, bgColor:'#2f3bd3', edge:50 },
+    sensor: { res:320, pixel:false, diffusion:15, msx:25, bloom:0 },
     range: { auto:true, level:50, span:100, gamma:1, eq:0, poster:0 },
     palette: { preset:"ironbow", stops:evenStops(PRESETS[0].stops), invert:false, cycles:1, offset:0 },
-    noise: { grain:8, size:1, vignette:0 },
-    scale: { show:false, pos:'right', tmin:20, tmax:38, unit:'C', text:'light' },
+    noise: { grain:8, size:1, vignette:0, fpn:0 },
+    scale: { show:false, auto:true, pos:'right', tmin:20, tmax:38, unit:'C', text:'light' },
   };
+  const T_MIN_C = 15, T_SPAN_C = 25;
+  const cToHeat = c => (c - T_MIN_C)/T_SPAN_C;
+  const heatToC = h => T_MIN_C + h*T_SPAN_C;
 
   const $ = id => document.getElementById(id);
   const glCanvas = $('glCanvas');
@@ -640,7 +685,8 @@
   /* ---------------------------------------------------------------------
      WEBGL
   --------------------------------------------------------------------- */
-  const gl = glCanvas.getContext('webgl2', { preserveDrawingBuffer:true, alpha:false, antialias:false });
+  // alpha pro fundo transparente: o passe final sai com cor pré-multiplicada
+  const gl = glCanvas.getContext('webgl2', { preserveDrawingBuffer:true, alpha:true, premultipliedAlpha:true, antialias:false });
   if(!gl){
     dropHint.textContent = 'seu navegador não suporta WebGL2, necessário para esta ferramenta.';
     return;
@@ -677,6 +723,14 @@ void main(){
   gl_Position = vec4(aPos, 0.0, 1.0);
 }`;
 
+  // máscara da IA (RGBA8), igual nos dois passes que a usam:
+  // modo 1 (rápida): R = pessoa. Modo 2 (detalhada): R cabelo, G pele do
+  // corpo, B pele do rosto, A roupa+acessórios; fundo = 1 - soma.
+  const MASK_GLSL = `
+float personAmount(vec4 m, int mode){
+  return mode == 1 ? m.r : clamp(m.r + m.g + m.b + m.a, 0.0, 1.0);
+}`;
+
   // foto → calor. Saída RG: R = calor (0 frio, 1 quente), G = luminância
   // (usada pelo detalhe MSX no passe final).
   const FRAG_HEAT = `#version 300 es
@@ -684,9 +738,15 @@ precision highp float;
 in vec2 vUv;
 out vec4 fragColor;
 uniform sampler2D uSrc;
+uniform sampler2D uMask;
 uniform float uRed;
 uniform float uSkin;
+uniform float uLights;
 uniform int uInvert;
+uniform int uSegMode;
+uniform float uTBg, uTPerson, uTHair, uTBody, uTFace, uTCloth;
+uniform float uPhoto;
+${MASK_GLSL}
 void main(){
   vec3 c = texture(uSrc, vUv).rgb;
   float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
@@ -698,6 +758,15 @@ void main(){
   float d = length(vec2((cb-0.40)/0.10, (cr-0.60)/0.08));
   float skin = (1.0 - smoothstep(0.8, 1.6, d)) * smoothstep(0.06, 0.18, lum);
   float heat = mix(base, max(base, 0.8 + 0.2*lum), skin*uSkin);
+  // com a IA, cada área tem sua temperatura e a foto só varia em volta dela
+  if(uSegMode > 0){
+    vec4 m = texture(uMask, vUv);
+    float t;
+    if(uSegMode == 1) t = mix(uTBg, uTPerson, m.r);
+    else t = uTBg*(1.0 - personAmount(m, 2)) + m.r*uTHair + m.g*uTBody + m.b*uTFace + m.a*uTCloth;
+    heat = t + uPhoto*(heat - 0.5);
+  }
+  heat = max(heat, mix(heat, 1.0, smoothstep(0.8, 1.0, lum)*uLights));
   fragColor = vec4(heat, lum, 0.0, 1.0);
 }`;
 
@@ -745,8 +814,34 @@ void main(){
   fragColor = sum/total;
 }`;
 
-  // calor suavizado + MSX → equalização → nível/span → vinheta → grão →
-  // gama → isotermas → paleta
+  // bloom: reduz o calor (como o FRAG_DOWN) guardando só o que passa de 60%
+  // da faixa atual; depois é borrado bem largo e somado no passe final
+  const FRAG_BLOOM = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uTex;
+uniform vec2 uSrcTexel;
+uniform vec2 uScale;
+uniform float uLo;
+uniform float uHi;
+void main(){
+  int n = int(clamp(ceil(max(uScale.x, uScale.y)*0.5), 1.0, 12.0));
+  float sum = 0.0;
+  for(int j=0; j<12; j++){
+    if(j >= n) break;
+    for(int i=0; i<12; i++){
+      if(i >= n) break;
+      vec2 o = (vec2(float(i), float(j)) + 0.5)/float(n) - 0.5;
+      float h = (texture(uTex, vUv + o*uScale*uSrcTexel).r - uLo)/max(uHi - uLo, 1e-4);
+      sum += max(0.0, h - 0.6)/0.4;
+    }
+  }
+  fragColor = vec4(sum/float(n*n), 0.0, 0.0, 1.0);
+}`;
+
+  // calor suavizado + MSX → equalização → nível/span → bloom → vinheta →
+  // grão → listras → gama → isotermas → paleta → fundo
   const FRAG_FINAL = `#version 300 es
 precision highp float;
 in vec2 vUv;
@@ -756,6 +851,16 @@ uniform sampler2D uFull;
 uniform sampler2D uLumBlur;
 uniform sampler2D uCdf;
 uniform sampler2D uLut;
+uniform sampler2D uBloomTex;
+uniform sampler2D uMask;
+uniform sampler2D uSrc;
+uniform float uBloom;
+uniform float uFpn;
+uniform vec2 uSensorPx;
+uniform int uSegMode;
+uniform int uBgMode;
+uniform vec3 uBgColor;
+uniform float uEdge;
 uniform float uMsx;
 uniform float uEq;
 uniform float uLo;
@@ -777,6 +882,7 @@ float hash(vec2 p){
   q ^= q >> 16u;
   return float(q.x ^ q.y) / 4294967295.0;
 }
+${MASK_GLSL}
 void main(){
   float h = texture(uHeat, vUv).r;
   if(uMsx > 0.0){
@@ -790,21 +896,50 @@ void main(){
     h = mix(h, e, uEq);
   }
   h = (h - uLo)/max(uHi - uLo, 1e-4);
+  // halo: o calor borrado só vale onde é maior que o local, então espalha
+  // em volta das áreas quentes sem saturar o detalhe de dentro delas
+  float glow = 0.0;
+  if(uBloom > 0.0){
+    glow = texture(uBloomTex, vUv).r*uBloom*1.2;
+    h = max(h, glow);
+  }
   vec2 q = vUv - 0.5;
   h -= uVignette*dot(q,q)*2.0;
   h += (hash(floor(vUv/uGrainCell)) - 0.5)*uGrain;
+  // padrão fixo do sensor: colunas, linhas e pixels com ganho um pouco diferente
+  if(uFpn > 0.0){
+    vec2 sp = floor(vUv*uSensorPx);
+    h += uFpn*0.1*((hash(vec2(sp.x, 7.0)) - 0.5) + 0.5*(hash(vec2(13.0, sp.y)) - 0.5) + 0.5*(hash(sp + 3.0) - 0.5));
+  }
   h = clamp(h, 0.0, 1.0);
   h = pow(h, uGamma);
   if(uPoster >= 2.0) h = min(floor(h*uPoster), uPoster-1.0)/(uPoster-1.0);
   float t = uInvert == 1 ? 1.0 - h : h;
   t = mod(t*uCycles + uOffset, 2.0);
   if(t > 1.0) t = 2.0 - t;
-  fragColor = vec4(texture(uLut, vec2(t*(1023.0/1024.0) + 0.5/1024.0, 0.5)).rgb, 1.0);
+  vec3 col = texture(uLut, vec2(t*(1023.0/1024.0) + 0.5/1024.0, 0.5)).rgb;
+  float a = 1.0;
+  // fundo tratado à parte pela máscara da IA; o halo do bloom invade o fundo
+  if(uSegMode > 0 && uBgMode > 0){
+    float w = mix(0.45, 0.03, uEdge);
+    float p = smoothstep(0.5 - w, 0.5 + w, personAmount(texture(uMask, vUv), uSegMode));
+    p = clamp(p + glow, 0.0, 1.0);
+    if(uBgMode == 4) a = p;
+    else {
+      vec3 photo = texture(uSrc, vUv).rgb;
+      vec3 bg = uBgColor;
+      if(uBgMode == 1) bg = photo;
+      if(uBgMode == 2) bg = mix(vec3(0.02, 0.05, 0.16), vec3(0.36, 0.82, 1.0), pow(dot(photo, vec3(0.2126, 0.7152, 0.0722)), 1.15));
+      col = mix(bg, col, p);
+    }
+  }
+  fragColor = vec4(col*a, a);
 }`;
 
   const heatProg  = makeProgram(FRAG_HEAT);
   const downProg  = makeProgram(FRAG_DOWN);
   const blurProg  = makeProgram(FRAG_BLUR);
+  const bloomProg = makeProgram(FRAG_BLOOM);
   const finalProg = makeProgram(FRAG_FINAL);
 
   const vao = gl.createVertexArray();
@@ -909,6 +1044,22 @@ void main(){
   const stats = { samples:null, cdf:new Float32Array(256).map((_,i)=>i/255), lo:0, hi:1 };
   uploadCdf(stats.cdf);
 
+  // máscara da IA pro recorte atual (ver MASK_GLSL); emptyTex ocupa os
+  // samplers que o shader não lê naquele render
+  const maskTex = gl.createTexture();
+  const emptyTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, emptyTex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+  setTexParams(gl.NEAREST);
+  const mask = { ready:false, mode:0 }; // mode: 1 rápida, 2 detalhada
+  function uploadMask(data, w, h){
+    gl.bindTexture(gl.TEXTURE_2D, maskTex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    setTexParams(gl.LINEAR);
+  }
+
   /* ---------------------------------------------------------------------
      PIPELINE
   --------------------------------------------------------------------- */
@@ -966,11 +1117,23 @@ void main(){
 
     // 1. calor na resolução de saída
     const full = target('full', W, H);
+    const segMode = mask.ready ? mask.mode : 0;
+    const sg = state.seg;
     pass(heatProg, full, L=>{
       bindTex(0, srcTex, L.uSrc);
+      bindTex(1, segMode ? maskTex : emptyTex, L.uMask);
       gl.uniform1f(L.uRed, state.src.red/100);
       gl.uniform1f(L.uSkin, state.src.skin/100);
+      gl.uniform1f(L.uLights, state.src.lights/100);
       gl.uniform1i(L.uInvert, state.src.invert ? 1 : 0);
+      gl.uniform1i(L.uSegMode, segMode);
+      gl.uniform1f(L.uTBg, cToHeat(sg.tBg));
+      gl.uniform1f(L.uTPerson, cToHeat(sg.tPerson));
+      gl.uniform1f(L.uTHair, cToHeat(sg.tHair));
+      gl.uniform1f(L.uTBody, cToHeat(sg.tBody));
+      gl.uniform1f(L.uTFace, cToHeat(sg.tFace));
+      gl.uniform1f(L.uTCloth, cToHeat(sg.tCloth));
+      gl.uniform1f(L.uPhoto, sg.photo/100);
     });
 
     // 2. sensor: reduz pra resolução do sensor. Como o número de px do
@@ -1010,18 +1173,50 @@ void main(){
 
     // 5. estatísticas pra faixa automática e equalização
     if(!freeze) computeStats(cur);
+    const [lo, hi] = currentLoHi();
 
-    // 6. passe final na tela
+    // 6. bloom numa cópia de ≤200 px, raio de 7% do lado maior
+    const bloomAmt = state.sensor.bloom/100;
+    let bloomT = null;
+    if(bloomAmt > 0){
+      const f = Math.min(1, 200/Math.max(cur.w, cur.h));
+      const bw = Math.max(1, Math.round(cur.w*f)), bh = Math.max(1, Math.round(cur.h*f));
+      const a = target('bloomA', bw, bh);
+      setFilter(cur, gl.LINEAR);
+      pass(bloomProg, a, L=>{
+        bindTex(0, cur.tex, L.uTex);
+        gl.uniform2f(L.uSrcTexel, 1/cur.w, 1/cur.h);
+        gl.uniform2f(L.uScale, cur.w/bw, cur.h/bh);
+        gl.uniform1f(L.uLo, lo);
+        gl.uniform1f(L.uHi, hi);
+      });
+      bloomT = target('bloomC', bw, bh);
+      blur(a, target('bloomB', bw, bh), bloomT, 0.07*Math.max(bw, bh));
+    }
+
+    // 7. passe final na tela
     setFilter(cur, state.sensor.pixel && sd.on ? gl.NEAREST : gl.LINEAR);
     setFilter(full, gl.LINEAR);
-    const [lo, hi] = currentLoHi();
     const cell = state.noise.size/PREVIEW_LONG;
+    // listras: uma por pixel do sensor, ou por pixel do preview sem sensor
+    const fpnW = sd.on ? sd.w : PREVIEW_LONG*W/long, fpnH = sd.on ? sd.h : PREVIEW_LONG*H/long;
+    const bgRgb = hexToRgb(sg.bgColor);
     pass(finalProg, null, L=>{
       bindTex(0, cur.tex, L.uHeat);
       bindTex(1, full.tex, L.uFull);
       bindTex(2, lumBlur.tex, L.uLumBlur);
       bindTex(3, cdfTex, L.uCdf);
       bindTex(4, lutTex, L.uLut);
+      bindTex(5, bloomT ? bloomT.tex : emptyTex, L.uBloomTex);
+      bindTex(6, segMode ? maskTex : emptyTex, L.uMask);
+      bindTex(7, srcTex, L.uSrc);
+      gl.uniform1f(L.uBloom, bloomAmt);
+      gl.uniform1f(L.uFpn, state.noise.fpn/100);
+      gl.uniform2f(L.uSensorPx, fpnW, fpnH);
+      gl.uniform1i(L.uSegMode, segMode);
+      gl.uniform1i(L.uBgMode, sg.bg);
+      gl.uniform3f(L.uBgColor, bgRgb[0], bgRgb[1], bgRgb[2]);
+      gl.uniform1f(L.uEdge, sg.edge/100);
       gl.uniform1f(L.uMsx, msx);
       gl.uniform1f(L.uEq, state.range.eq/100);
       gl.uniform1f(L.uLo, lo);
@@ -1185,9 +1380,19 @@ void main(){
   /* ---------------------------------------------------------------------
      RENDER
   --------------------------------------------------------------------- */
+  // "temperaturas da cena": a escala segue a faixa atual na régua calor↔°C
+  function syncSceneTemps(){
+    if(!state.scale.auto) return;
+    const [lo, hi] = currentLoHi();
+    state.scale.tmin = Math.round(heatToC(lo)*10)/10;
+    state.scale.tmax = Math.round(heatToC(hi)*10)/10;
+    $('tmin').value = state.scale.tmin;
+    $('tmax').value = state.scale.tmax;
+  }
   function render(){
     if(!state.cropApplied || !srcTex) return;
     const sd = renderAll(false);
+    syncSceneTemps();
     drawScale(octx, RW, RH, true);
     statusLabel.textContent = `${RW}×${RH}` + (sd.on ? ` · sensor ${sd.w}×${sd.h}` : '');
   }
@@ -1197,6 +1402,113 @@ void main(){
     if(renderQueued) return;
     renderQueued = true;
     requestAnimationFrame(()=>{ renderQueued = false; render(); });
+  }
+
+  /* ---------------------------------------------------------------------
+     PESSOA (IA)
+     MediaPipe Image Segmenter rodando no navegador. A biblioteca e os
+     modelos só são baixados quando a detecção é ligada; o resultado vira a
+     textura maskTex do recorte atual (o export reaproveita a mesma máscara).
+  --------------------------------------------------------------------- */
+  const MP_BASE = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1';
+  const SEG_MODELS = {
+    fast:   { label:'rápido',    size:'0,25 MB', url:'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite' },
+    detail: { label:'detalhado', size:'16 MB',   url:'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite' },
+  };
+  let visionPromise = null;
+  const segmenters = {};
+  let segToken = 0;
+  function loadVision(){
+    if(!visionPromise){
+      visionPromise = (async()=>{
+        const mp = await import(MP_BASE + '/vision_bundle.mjs');
+        const fileset = await mp.FilesetResolver.forVisionTasks(MP_BASE + '/wasm');
+        return { mp, fileset };
+      })();
+      visionPromise.catch(()=>{ visionPromise = null; });
+    }
+    return visionPromise;
+  }
+  function getSegmenter(mode){
+    if(!segmenters[mode]){
+      segmenters[mode] = (async()=>{
+        const { mp, fileset } = await loadVision();
+        const opts = delegate => ({
+          baseOptions:{ modelAssetPath:SEG_MODELS[mode].url, delegate },
+          runningMode:'IMAGE', outputConfidenceMasks:true, outputCategoryMask:false,
+        });
+        try { return await mp.ImageSegmenter.createFromOptions(fileset, opts('GPU')); }
+        catch(err){ return await mp.ImageSegmenter.createFromOptions(fileset, opts('CPU')); }
+      })();
+      segmenters[mode].catch(()=>{ delete segmenters[mode]; });
+    }
+    return segmenters[mode];
+  }
+  function setSegStatus(text, busy){
+    const el = $('segStatus');
+    el.innerHTML = '';
+    if(busy){ const s = document.createElement('span'); s.className = 'spinner'; el.appendChild(s); }
+    el.appendChild(document.createTextNode(text));
+  }
+  // roda a IA no recorte atual (ou só carrega o modelo, se ainda não há
+  // imagem). O token descarta resultados de pedidos que ficaram velhos.
+  async function runSegmentation(){
+    const mode = state.seg.mode;
+    const token = ++segToken;
+    mask.ready = false;
+    syncSegUI();
+    if(mode === 'off'){ setSegStatus(''); requestRender(); return; }
+    const m = SEG_MODELS[mode];
+    setSegStatus(`carregando modelo ${m.label} (${m.size})…`, true);
+    let seg;
+    try { seg = await getSegmenter(mode); }
+    catch(err){
+      console.error(err);
+      if(token === segToken) setSegStatus('não foi possível carregar o modelo. confira a conexão e tente de novo.');
+      return;
+    }
+    if(token !== segToken) return;
+    if(!state.cropApplied){ setSegStatus('modelo pronto. carregue uma imagem.'); return; }
+    setSegStatus('detectando pessoa…', true);
+    // deixa o aviso aparecer: a 1ª execução compila o modelo e trava alguns segundos
+    await new Promise(r=>setTimeout(r, 30));
+    if(token !== segToken || !state.cropApplied) return;
+    let result;
+    try { result = seg.segment(srcCanvas); }
+    catch(err){ console.error(err); setSegStatus('não foi possível processar essa imagem.'); return; }
+    const masks = result.confidenceMasks;
+    const w = masks[0].width, h = masks[0].height, n = w*h;
+    const data = new Uint8Array(n*4);
+    let person = 0;
+    if(mode === 'fast'){
+      const p = masks[0].getAsFloat32Array();
+      for(let i=0; i<n; i++){ data[i*4] = Math.round(p[i]*255); person += p[i]; }
+    } else {
+      // fundo, cabelo, pele do corpo, pele do rosto, roupa, outros (acessórios)
+      const [bg, hair, body, face, cloth, other] = masks.map(mk=>mk.getAsFloat32Array());
+      for(let i=0; i<n; i++){
+        data[i*4]   = Math.round(hair[i]*255);
+        data[i*4+1] = Math.round(body[i]*255);
+        data[i*4+2] = Math.round(face[i]*255);
+        data[i*4+3] = Math.round(Math.min(1, cloth[i] + other[i])*255);
+        person += 1 - bg[i];
+      }
+    }
+    result.close();
+    uploadMask(data, w, h);
+    mask.ready = true;
+    mask.mode = mode === 'fast' ? 1 : 2;
+    const cover = person/n;
+    setSegStatus(cover < 0.005 ? 'nenhuma pessoa encontrada nesta imagem.' : `pessoa detectada (${Math.round(cover*100)}% da imagem).`);
+    requestRender();
+  }
+  function syncSegUI(){
+    const mode = state.seg.mode;
+    $('segControls').style.display = mode === 'off' ? 'none' : '';
+    document.querySelectorAll('.seg-detail').forEach(el=>el.style.display = mode === 'detail' ? '' : 'none');
+    document.querySelectorAll('.seg-fast').forEach(el=>el.style.display = mode === 'fast' ? '' : 'none');
+    $('bgColorRow').style.display = state.seg.bg === 3 ? '' : 'none';
+    $('edgeRow').style.display = state.seg.bg > 0 ? '' : 'none';
   }
 
   /* ---------------------------------------------------------------------
@@ -1226,7 +1538,24 @@ void main(){
   // fonte do calor
   bindRange('srcRed', ()=>state.src.red, v=>state.src.red = v, pct);
   bindRange('srcSkin', ()=>state.src.skin, v=>state.src.skin = v, pct);
+  bindRange('srcLights', ()=>state.src.lights, v=>state.src.lights = v, pct);
   bindCheck('srcInvert', ()=>state.src.invert, v=>state.src.invert = v);
+
+  // pessoa (ia): temperaturas em décimos de °C no slider
+  bindToggle('segModeGroup', ()=>state.seg.mode, v=>{ state.seg.mode = v; runSegmentation(); });
+  const degC = v => (v/10).toFixed(1) + '°';
+  [['tFace','tFace'],['tBody','tBody'],['tCloth','tCloth'],['tHair','tHair'],['tPerson','tPerson'],['tBg','tBg']].forEach(([id, key])=>{
+    bindRange(id, ()=>Math.round(state.seg[key]*10), v=>state.seg[key] = v/10, degC);
+  });
+  bindRange('photoInfl', ()=>state.seg.photo, v=>state.seg.photo = v, pct);
+  const bgMode = $('bgMode');
+  bgMode.value = state.seg.bg;
+  bgMode.addEventListener('change', ()=>{ state.seg.bg = +bgMode.value; syncSegUI(); requestRender(); });
+  const bgColor = $('bgColor');
+  bgColor.value = state.seg.bgColor;
+  bgColor.addEventListener('input', ()=>{ state.seg.bgColor = bgColor.value; requestRender(); });
+  bindRange('edge', ()=>state.seg.edge, v=>state.seg.edge = v, pct);
+  syncSegUI();
 
   // sensor
   const sensorRes = $('sensorRes');
@@ -1235,6 +1564,7 @@ void main(){
   bindToggle('upscaleGroup', ()=>state.sensor.pixel ? 'pixel' : 'smooth', v=>state.sensor.pixel = v === 'pixel');
   bindRange('diffusion', ()=>state.sensor.diffusion, v=>state.sensor.diffusion = v, pct);
   bindRange('msx', ()=>state.sensor.msx, v=>state.sensor.msx = v, pct);
+  bindRange('bloom', ()=>state.sensor.bloom, v=>state.sensor.bloom = v, pct);
 
   // faixa: mexer em nível/span desliga o automático
   const rangeAuto = bindCheck('rangeAuto', ()=>state.range.auto, v=>{
@@ -1341,9 +1671,13 @@ void main(){
   bindRange('grain', ()=>state.noise.grain, v=>state.noise.grain = v, pct);
   bindRange('grainSize', ()=>state.noise.size, v=>state.noise.size = v, v=>v + 'px');
   bindRange('vignette', ()=>state.noise.vignette, v=>state.noise.vignette = v, pct);
+  bindRange('fpn', ()=>state.noise.fpn, v=>state.noise.fpn = v, pct);
 
   // escala
   bindCheck('scaleShow', ()=>state.scale.show, v=>state.scale.show = v);
+  const syncScaleAuto = ()=>{ $('tmin').disabled = $('tmax').disabled = state.scale.auto; };
+  bindCheck('scaleAuto', ()=>state.scale.auto, v=>{ state.scale.auto = v; syncScaleAuto(); });
+  syncScaleAuto();
   bindToggle('scalePosGroup', ()=>state.scale.pos, v=>state.scale.pos = v);
   bindToggle('scaleUnitGroup', ()=>state.scale.unit, v=>state.scale.unit = v);
   bindToggle('scaleTextGroup', ()=>state.scale.text, v=>state.scale.text = v);
@@ -1362,6 +1696,9 @@ void main(){
   $('btnReset').addEventListener('click', ()=>{
     state.img = null;
     state.cropApplied = false;
+    mask.ready = false;
+    segToken++;
+    if(state.seg.mode !== 'off') setSegStatus('');
     dropHint.style.display = 'flex';
     statusLabel.textContent = 'sem imagem';
     canvasTitle.textContent = 'PREVIEW';
@@ -1473,8 +1810,11 @@ void main(){
     setOutputSize(w, h);
     uploadSource(srcCanvas);
     state.cropApplied = true;
+    mask.ready = false;
     showResultUI();
     render();
+    // a máscara é do recorte: recorte novo, detecção nova
+    if(state.seg.mode !== 'off') runSegmentation();
   }
 
   $('cropRatio').addEventListener('change', e=>{
@@ -1767,9 +2107,9 @@ void main(){
     const list = [hex, ...recentColors().filter(c=>c !== hex)].slice(0, 8);
     try { localStorage.setItem(RECENT_COLORS_KEY, JSON.stringify(list)); } catch(e){}
   }
-  // cores da paleta atual + as últimas escolhidas
+  // cores da paleta atual + fundo + as últimas escolhidas
   function usedColors(){
-    const list = [...sortedStops().map(s=>s.color), ...recentColors()];
+    const list = [...sortedStops().map(s=>s.color), state.seg.bgColor, ...recentColors()];
     const seen = new Set();
     return list.map(c=>normalizeHex(c)).filter(c=>c && !seen.has(c) && seen.add(c)).slice(0, 14);
   }
@@ -1901,6 +2241,10 @@ void main(){
     if(inp.style.flex) trig.style.flex = inp.style.flex;
     trig.innerHTML = `<span class="cpick-chip"></span><span class="cpick-code"></span>`;
     const chip = trig.firstChild, code = trig.lastChild;
+    if(inp.id){
+      trig.id = inp.id + "Pick";
+      document.querySelectorAll(`label[for="${inp.id}"]`).forEach(l=>{ l.htmlFor = trig.id; });
+    }
     const lbl = inp.getAttribute("aria-label") || "Cor";
     const sync = ()=>{
       const v = valueDesc.get.call(inp);
