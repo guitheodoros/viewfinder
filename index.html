@@ -6,7 +6,7 @@
 <title>Thermograph</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=VT323&family=Space+Mono:wght@400;700&family=Michroma&display=swap" rel="stylesheet">
 <script>
   // tema escolhido antes do primeiro paint: preferência salva, senão escuro
   (function(){
@@ -198,6 +198,15 @@
   select:hover, input[type=number]:hover{ border-color:var(--text); }
   input[type=number]:focus, select:focus{ outline:none; border-color:var(--text); }
   input[type=number]:disabled{ opacity:.5; }
+  .row input[type=text], .row textarea{
+    flex:2; min-width:0; font-family:inherit; font-size:11px;
+    border:1px solid var(--control); border-radius:3px; background:var(--field); color:var(--text); padding:4px 6px;
+  }
+  .row textarea{ resize:vertical; min-height:46px; line-height:1.4; }
+  .row input[type=text]:hover, .row textarea:hover{ border-color:var(--text); }
+  .row input[type=text]:focus, .row textarea:focus{ outline:none; border-color:var(--text); }
+  .row.row-top{ align-items:flex-start; }
+  .row.row-top label{ padding-top:5px; }
   .hint{ font-size:10px; color:var(--muted); margin:2px 0 8px; line-height:1.45; }
   .hint:empty{ display:none; }
   .subhead{
@@ -581,6 +590,36 @@
       </div>
     </details>
 
+    <details class="panel" name="painel">
+      <summary><h2>OSD</h2></summary>
+      <div class="row"><label for="osdTemplate">template</label>
+        <select id="osdTemplate">
+          <option value="none">nenhum</option>
+          <option value="ircam">ir-cam (térmico)</option>
+          <option value="scan">thermal scan (pôster)</option>
+          <option value="surv">vigilância ia</option>
+          <option value="cctv">cctv</option>
+          <option value="camcorder">camcorder</option>
+        </select>
+      </div>
+      <div id="osdCommon" style="display:none;">
+        <div class="row"><label for="osdFont">fonte</label>
+          <select id="osdFont">
+            <option value="pixel">pixel (VT323)</option>
+            <option value="mono">mono (Space Mono)</option>
+            <option value="tech">tech (Michroma)</option>
+          </select>
+        </div>
+        <div class="row"><label for="osdColor">cor</label><input type="color" id="osdColor" aria-label="Cor do OSD"></div>
+        <div class="row"><label for="osdSize">tamanho</label><input type="range" id="osdSize" autocomplete="off" min="50" max="200"><span class="val" id="osdSizeVal"></span></div>
+        <div class="check"><input type="checkbox" id="osdLowres"><label for="osdLowres">baixa resolução (720p)</label></div>
+        <p class="hint" id="osdHint"></p>
+        <div class="subhead">textos</div>
+        <div id="osdFields"></div>
+      </div>
+      <p class="hint">a interface do aparelho por cima da imagem. as caixas e temperaturas vêm da detecção e do calor da própria imagem; os textos são editáveis.</p>
+    </details>
+
     <div class="panel">
       <h2>Export</h2>
       <div class="row"><label>resolução (lado maior)</label></div>
@@ -655,6 +694,8 @@
     palette: { preset:"ironbow", stops:evenStops(PRESETS[0].stops), invert:false, cycles:1, offset:0 },
     noise: { grain:8, size:1, vignette:0, fpn:0 },
     scale: { show:false, auto:true, pos:'right', tmin:20, tmax:38, unit:'C', text:'light' },
+    // textos de cada template ficam em text (preenchido com os padrões em OSD_TEMPLATES)
+    osd: { template:'none', font:'pixel', color:'#7dff9a', size:100, lowres:false, text:{} },
   };
   const T_MIN_C = 15, T_SPAN_C = 25;
   const cToHeat = c => (c - T_MIN_C)/T_SPAN_C;
@@ -1256,6 +1297,7 @@ void main(){
       for(let i=0; i<n; i++) vals[i] = buf[i*4]/255;
     }
     stats.samples = vals;
+    stats.sw = st.w; stats.sh = st.h;
     updateRangeFromStats();
   }
 
@@ -1378,6 +1420,324 @@ void main(){
   }
 
   /* ---------------------------------------------------------------------
+     OSD (interface do aparelho, Canvas2D na mesma camada da escala)
+     Cada template desenha com medidas em u = 1% do lado maior × tamanho.
+  --------------------------------------------------------------------- */
+  // k compensa o tamanho aparente de cada fonte no mesmo corpo
+  const OSD_FONTS = {
+    pixel: { css:'"VT323", monospace', k:1.3 },
+    mono:  { css:'"Space Mono", ui-monospace, monospace', k:0.9 },
+    tech:  { css:'"Michroma", sans-serif', k:0.72 },
+  };
+  const pad2 = n => String(n).padStart(2, '0');
+  const NOW = new Date();
+  const TODAY = `${pad2(NOW.getDate())}/${pad2(NOW.getMonth()+1)}/${NOW.getFullYear()}`;
+  const CLOCK = `${pad2(NOW.getHours())}:${pad2(NOW.getMinutes())}:${pad2(NOW.getSeconds())}`;
+  // campos: [chave, rótulo, padrão, tipo]; seg = usa as caixas da IA
+  const OSD_TEMPLATES = {
+    ircam: { font:'pixel', color:'#7dff9a', seg:true, fields:[
+      ['ircamTitle', 'linha 1', 'IR-CAM ACTIVE'],
+      ['ircamTarget', 'alvo', 'TARGET: HUMAN'],
+      ['ircamStatus', 'status', 'SCANNING...'],
+    ]},
+    scan: { font:'tech', color:'#3dff6a', seg:true, fields:[
+      ['scanTitle', 'título', 'THERMAL SCAN'],
+      ['scanCam', 'câmera', 'CAM I'],
+      ['scanPlace', 'local', 'AIRPORT TERMINAL 83'],
+      ['scanName', 'nome', 'SUBJECT 01'],
+      ['scanFooter', 'rodapé', `TERMINAL 83 • ${TODAY} • ${CLOCK.slice(0,5)}`],
+    ]},
+    surv: { font:'pixel', color:'#3dff6a', seg:true, fields:[
+      ['survCam', 'câmera', 'CAM#3'],
+      ['survName', 'nome', 'SUBJECT A'],
+      ['survMatch', 'match', '95% MATCH'],
+      ['survCloth', 'roupa', 'WHITE TEE'],
+      ['survCard', 'cartão', 'ID: 0042-LN\nSTATUS: TRACKING', 'multi'],
+      ['survStatus', 'barra de status', 'Biometric identification, Behavior analysis, Style information'],
+    ]},
+    cctv: { font:'pixel', color:'#ffffff', seg:false, fields:[
+      ['cctvCam', 'câmera', 'CAM 07'],
+      ['cctvDate', 'data', TODAY],
+      ['cctvTime', 'hora', CLOCK],
+    ]},
+    camcorder: { font:'pixel', color:'#ffffff', seg:false, fields:[
+      ['camBattery', 'bateria', '205min'],
+      ['camMode', 'modo', 'SP'],
+      ['camTime', 'timecode', '0:02:17'],
+      ['camZoom', 'zoom', 30, 'range'],
+    ]},
+  };
+  for(const tpl of Object.values(OSD_TEMPLATES))
+    for(const [key, , def] of tpl.fields) if(!(key in state.osd.text)) state.osd.text[key] = def;
+
+  function osdFont(px){
+    const f = OSD_FONTS[state.osd.font];
+    return `${Math.max(6, px*f.k)}px ${f.css}`;
+  }
+  function osdText(o, str, x, y, px, align, base, color){
+    const c = o.ctx;
+    c.font = osdFont(px);
+    c.textAlign = align || 'left';
+    c.textBaseline = base || 'alphabetic';
+    if(color) c.fillStyle = color;
+    c.fillText(str, x, y);
+    return c.measureText(str).width;
+  }
+  // texto numa caixa sólida; align = lado da caixa preso em x
+  function osdTag(o, str, x, y, px, bg, fg, align){
+    const c = o.ctx;
+    c.font = osdFont(px);
+    const padX = px*0.3, bw = c.measureText(str).width + padX*2, bh = px*1.15;
+    const bx = align === 'right' ? x - bw : x;
+    c.fillStyle = bg; c.fillRect(bx, y, bw, bh);
+    c.fillStyle = fg; c.textAlign = 'left'; c.textBaseline = 'middle';
+    c.fillText(str, bx + padX, y + bh*0.54);
+    return { x:bx, y, w:bw, h:bh };
+  }
+  function osdCorners(c, x0, y0, x1, y1, L){
+    c.beginPath();
+    c.moveTo(x0, y0 + L); c.lineTo(x0, y0); c.lineTo(x0 + L, y0);
+    c.moveTo(x1 - L, y0); c.lineTo(x1, y0); c.lineTo(x1, y0 + L);
+    c.moveTo(x1, y1 - L); c.lineTo(x1, y1); c.lineTo(x1 - L, y1);
+    c.moveTo(x0 + L, y1); c.lineTo(x0, y1); c.lineTo(x0, y1 - L);
+    c.stroke();
+  }
+  function osdCross(c, cx, cy, r){
+    c.beginPath();
+    c.moveTo(cx - r, cy); c.lineTo(cx - r*0.3, cy); c.moveTo(cx + r*0.3, cy); c.lineTo(cx + r, cy);
+    c.moveTo(cx, cy - r); c.lineTo(cx, cy - r*0.3); c.moveTo(cx, cy + r*0.3); c.lineTo(cx, cy + r);
+    c.stroke();
+  }
+  const boxPx = (o, b)=>({ x0:b.x0*o.w, y0:b.y0*o.h, x1:b.x1*o.w, y1:b.y1*o.h });
+  const unitLabel = ()=>state.scale.unit === 'K' ? 'K' : '°' + state.scale.unit;
+  const tempStr = (c, digits)=>convertTemp(c).toFixed(digits) + unitLabel();
+  // texto escuro em cores claras, branco em cores escuras
+  const inkOn = hex=>{ const [r,g,b] = hexToRgb(hex); return 0.2126*r + 0.7152*g + 0.0722*b > 0.5 ? '#0a0a0a' : '#ffffff'; };
+  // "SUBJECT 01" → "SUBJECT 02"… pras outras pessoas
+  const nthName = (name, i)=>i === 0 ? name
+    : /\d+$/.test(name) ? name.replace(/\d+$/, d=>String(+d + i).padStart(d.length, '0')) : `${name} ${i+1}`;
+
+  const OSD_DRAW = {
+    // ref: câmera IR com mira na pessoa, fósforo verde
+    ircam(o){
+      const c = o.ctx, u = o.u, t = state.osd.text;
+      const m = u*3.5, fs = u*2.6, lw = Math.max(1.5, u*0.32);
+      c.strokeStyle = o.col; c.fillStyle = o.col; c.lineWidth = lw;
+      c.shadowColor = o.col; c.shadowBlur = u*0.7;
+      osdCorners(c, m, m, o.w - m, o.h - m, u*6);
+      const ix = m + u*1.4, iy = m + u*1.2, rx = o.w - m - u*1.4;
+      osdText(o, t.ircamTitle, ix, iy, fs, 'left', 'top');
+      const ref = (det.persons.length && boxTempC(det.persons[0])) || o.temps.max;
+      const letter = state.scale.unit === 'K' ? 'K' : state.scale.unit;
+      osdText(o, `TEMP REF: ${convertTemp(ref).toFixed(1)}${letter}`, rx, iy, fs, 'right', 'top');
+      osdText(o, `DELTA: ${(convertTemp(ref) - convertTemp(o.temps.min)).toFixed(1)}`, rx, iy + fs*1.05, fs, 'right', 'top');
+      osdText(o, t.ircamTarget, ix, o.h - m - u*1.2, fs*1.45, 'left', 'bottom');
+      osdText(o, t.ircamStatus, rx, o.h - m - u*1.2, fs*0.95, 'right', 'bottom');
+      c.lineWidth = lw*0.8;
+      det.persons.slice(0, 3).forEach(b=>{
+        const p = boxPx(o, b);
+        c.strokeRect(p.x0, p.y0, p.x1 - p.x0, p.y1 - p.y0);
+        osdCross(c, (p.x0 + p.x1)/2, (p.y0 + p.y1)/2, u*2.2);
+      });
+    },
+
+    // ref: pôster "thermal scan" — cabeçalho/rodapé, caixa rotulada por pessoa
+    scan(o){
+      const c = o.ctx, u = o.u, t = state.osd.text, W = o.w, H = o.h;
+      const fs = u*2.1, white = '#f2f2f2', red = '#ff4040', lw = Math.max(1, u*0.14);
+      const hy = u*4.2, fy = H - u*4.2;
+      c.fillStyle = white;
+      osdText(o, t.scanTitle, u*6, hy, fs, 'left', 'middle');
+      osdText(o, t.scanCam, W*0.43, hy, fs, 'center', 'middle');
+      osdText(o, unitLabel(), W*0.56, hy, fs, 'center', 'middle');
+      osdText(o, t.scanPlace, W - u*6, hy, fs, 'right', 'middle');
+      osdText(o, t.scanFooter, W/2, fy, fs, 'center', 'middle');
+      c.strokeStyle = white; c.lineWidth = lw;
+      [[u*2.6, hy], [W - u*2.6, hy], [u*2.6, fy], [W - u*2.6, fy]].forEach(([x, y])=>osdCross(c, x, y, u));
+      const labels = [];
+      det.persons.slice(0, 4).forEach((b, i)=>{
+        const p = boxPx(o, b), pad = u*1.2;
+        const x0 = p.x0 - pad, y0 = p.y0 - pad, x1 = p.x1 + pad, y1 = p.y1 + pad;
+        c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = lw;
+        c.strokeRect(x0, y0, x1 - x0, y1 - y0);
+        c.fillStyle = white;
+        [[x0, y0], [x1, y0], [x0, y1], [x1, y1]].forEach(([x, y])=>c.fillRect(x - u*0.35, y - u*0.35, u*0.7, u*0.7));
+        // rótulo com nome, status e temperatura
+        // rótulo acima da caixa; se bater no cabeçalho, entra nela
+        const bh = fs*1.45, bw = x1 - x0;
+        let by = y0 - bh - u*0.8;
+        if(by < hy + fs) by = y0 + u*0.8;
+        c.fillStyle = 'rgba(232,232,232,.94)'; c.fillRect(x0, by, bw, bh);
+        c.save(); c.beginPath(); c.rect(x0, by, Math.max(0, bw - fs*1.4), bh); c.clip();
+        osdText(o, nthName(t.scanName, i), x0 + fs*0.4, by + bh*0.54, fs*0.9, 'left', 'middle', '#1a1a1a');
+        c.restore();
+        c.fillStyle = i % 2 ? red : '#2bd94a';
+        c.beginPath(); c.arc(x1 - fs*0.7, by + bh/2, fs*0.32, 0, Math.PI*2); c.fill();
+        const tc = boxTempC(b);
+        if(tc != null){
+          // a seta vai desenhada (nem toda fonte tem o ▲)
+          const ty = by + bh + fs*0.95, tw = osdText(o, tempStr(tc, 2), x1 - u*0.3, ty, fs, 'right', 'middle', red);
+          const ax = x1 - u*0.3 - tw - fs*0.55;
+          c.beginPath(); c.moveTo(ax, ty - fs*0.32); c.lineTo(ax - fs*0.3, ty + fs*0.22); c.lineTo(ax + fs*0.3, ty + fs*0.22); c.closePath(); c.fill();
+        }
+        labels.push({ x0, x1, y:by + bh/2 });
+        // cantoneiras na cabeça: rosto detectado, ou o topo da caixa
+        const face = det.faces.find(f=>insideBox(f, b));
+        const hb = face ? boxPx(o, face) : { x0:(p.x0 + p.x1)/2 - (p.x1 - p.x0)*0.18, x1:(p.x0 + p.x1)/2 + (p.x1 - p.x0)*0.18, y0:p.y0, y1:p.y0 + (p.y1 - p.y0)*0.18 };
+        c.strokeStyle = o.col; c.lineWidth = lw*1.6;
+        osdCorners(c, hb.x0 - u*0.6, hb.y0 - u*0.6, hb.x1 + u*0.6, hb.y1 + u*0.6, u*1.4);
+        // mira no centro e triângulo embaixo
+        c.strokeStyle = white; c.lineWidth = lw*1.3;
+        const cx = (p.x0 + p.x1)/2, cy = (p.y0 + p.y1)/2;
+        c.beginPath(); c.arc(cx, cy, u*0.9, 0, Math.PI*2); c.stroke();
+        osdCross(c, cx, cy, u*1.9);
+        c.fillStyle = white;
+        c.beginPath(); c.moveTo(cx, y1 + u*1.6); c.lineTo(cx - u, y1 + u*3.2); c.lineTo(cx + u, y1 + u*3.2); c.closePath(); c.fill();
+      });
+      // pontilhado ligando os rótulos, da esquerda pra direita
+      labels.sort((a, b)=>a.x0 - b.x0);
+      c.strokeStyle = o.col; c.lineWidth = lw*1.2; c.setLineDash([u*0.5, u*0.5]);
+      for(let i=0; i<labels.length - 1; i++){
+        const a = labels[i], b = labels[i+1], mx = (a.x1 + b.x0)/2;
+        c.beginPath(); c.moveTo(a.x1, a.y); c.lineTo(mx, a.y); c.lineTo(mx, b.y); c.lineTo(b.x0, b.y); c.stroke();
+      }
+      c.setLineDash([]);
+    },
+
+    // ref: vigilância com IA — caixas por pessoa/rosto/roupa, recorte do rosto, cartão, status
+    surv(o){
+      const c = o.ctx, u = o.u, t = state.osd.text, W = o.w, H = o.h;
+      const fs = u*1.9, lw = Math.max(1.2, u*0.22), barH = fs*1.8;
+      const cols = [o.col, '#3b5bff', '#ff4fd8', '#ffd23b'];
+      c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = lw;
+      osdCorners(c, u*2.5, u*2.5, W - u*2.5, H - barH - u*2.5, u*3.5);
+      const cam = osdTag(o, t.survCam, u*4, u*4, fs*1.2, 'rgba(0,0,0,.45)', '#fff', 'left');
+      c.strokeStyle = '#fff'; c.strokeRect(cam.x, cam.y, cam.w, cam.h);
+      c.fillStyle = '#ff3b30';
+      c.beginPath(); c.arc(W - u*9, u*4 + fs*0.6, fs*0.3, 0, Math.PI*2); c.fill();
+      osdText(o, 'REC', W - u*8.2, u*4 + fs*0.62, fs, 'left', 'middle', '#fff');
+
+      const persons = det.persons.slice(0, 4);
+      const colorOf = b=>cols[Math.max(0, persons.findIndex(pp=>insideBox(b, pp))) % cols.length];
+      persons.forEach((b, i)=>{
+        const p = boxPx(o, b), col = cols[i % cols.length];
+        c.strokeStyle = col; c.lineWidth = lw;
+        c.strokeRect(p.x0, p.y0, p.x1 - p.x0, p.y1 - p.y0);
+        // rótulo acima da caixa; sem espaço (pessoa no topo), entra nela
+        const above = p.y0 - fs*2.3 > u*1.5;
+        const tag = osdTag(o, i === 0 ? t.survName : `ID ${pad2(i+1)}`, p.x0, above ? p.y0 - fs*1.15 : p.y0 + lw, fs, col, inkOn(col), 'left');
+        const match = i === 0 ? t.survMatch : `${Math.max(40, 92 - i*9)}% MATCH`;
+        if(above) osdText(o, match, p.x0, tag.y - fs*0.3, fs*0.8, 'left', 'bottom', '#fff');
+        else osdText(o, match, p.x0 + u*0.3, tag.y + tag.h + fs*0.2, fs*0.8, 'left', 'top', '#fff');
+      });
+      c.lineWidth = lw; c.setLineDash([u*0.45, u*0.35]);
+      det.faces.forEach(f=>{ const p = boxPx(o, f); c.strokeStyle = colorOf(f); c.strokeRect(p.x0, p.y0, p.x1 - p.x0, p.y1 - p.y0); });
+      c.setLineDash([]);
+      det.clothes.forEach((cb, k)=>{
+        const p = boxPx(o, cb), col = colorOf(cb), pad = u*0.6;
+        c.strokeStyle = col; c.lineWidth = lw*0.9;
+        c.strokeRect(p.x0 + pad, p.y0 + pad, p.x1 - p.x0 - pad*2, p.y1 - p.y0 - pad*2);
+        osdTag(o, k === 0 ? t.survCloth : `ITEM ${pad2(k+1)}`, p.x0 + pad, p.y1 - pad - fs*1.05, fs*0.85, col, inkOn(col), 'left');
+      });
+      // recorte do rosto principal, ligado à caixa, com o cartão embaixo
+      const face = det.faces[0];
+      if(face && det.thumb){
+        const fp = boxPx(o, face), cc = '#3b5bff';
+        const tw = Math.min(W*0.27, H*0.3), th = tw*1.05;
+        const right = (fp.x0 + fp.x1)/2 < W/2;
+        const tx = right ? W - tw - u*4 : u*4;
+        const lines = (t.survCard || '').split('\n').map(s=>s.trim()).filter(Boolean);
+        const ft = boxTempC(face);
+        if(ft != null) lines.push('TEMP: ' + tempStr(ft, 1));
+        const lh = fs*1.05, cardH = lh*(lines.length + 1.6) + fs*0.6;
+        const ty = Math.max(u*9, Math.min(fp.y0 - th*0.25, H - barH - th - cardH - u*3));
+        c.drawImage(det.thumb, tx, ty, tw, th);
+        c.strokeStyle = cc; c.lineWidth = lw*1.2; c.strokeRect(tx, ty, tw, th);
+        const fy = (fp.y0 + fp.y1)/2, fx = right ? fp.x1 : fp.x0, ex = right ? tx : tx + tw, mx = (fx + ex)/2;
+        c.lineWidth = lw;
+        c.beginPath(); c.moveTo(fx, fy); c.lineTo(mx, fy); c.lineTo(mx, ty + th*0.3); c.lineTo(ex, ty + th*0.3); c.stroke();
+        const cy = ty + th + u*0.6;
+        c.fillStyle = 'rgba(42,63,214,.92)'; c.fillRect(tx, cy, tw, cardH);
+        lines.forEach((ln, j)=>osdText(o, ln, tx + fs*0.5, cy + fs*0.5 + lh*(j + 0.5), fs*0.85, 'left', 'middle', j === 0 ? '#5ff0ff' : '#fff'));
+        const by = cy + fs*0.5 + lh*(lines.length + 0.4), bw = tw - fs*3.4;
+        c.strokeStyle = '#fff'; c.lineWidth = Math.max(1, lw*0.7);
+        c.strokeRect(tx + fs*0.5, by, bw, fs*0.5);
+        c.fillStyle = '#fff'; c.fillRect(tx + fs*0.5, by, bw*0.8, fs*0.5);
+        osdText(o, '80%', tx + tw - fs*0.5, by + fs*0.27, fs*0.8, 'right', 'middle', '#fff');
+      }
+      // barra de status embaixo: cada item com "ON"
+      c.fillStyle = 'rgba(0,0,0,.72)'; c.fillRect(0, H - barH, W, barH);
+      const items = (t.survStatus || '').split(',').map(s=>s.trim()).filter(Boolean);
+      const slot = W/Math.max(1, items.length);
+      c.font = osdFont(fs*0.85);
+      const onW = c.measureText(' ON').width;
+      items.forEach((it, k)=>{
+        c.font = osdFont(fs*0.85);
+        const itW = c.measureText(it).width, x = slot*k + (slot - itW - onW)/2, y = H - barH/2;
+        osdText(o, it, x, y, fs*0.85, 'left', 'middle', '#fff');
+        osdText(o, ' ON', x + itW, y, fs*0.85, 'left', 'middle', o.col);
+      });
+    },
+
+    // ref: CCTV — etiqueta da câmera e data/hora em caixas pretas
+    cctv(o){
+      const u = o.u, t = state.osd.text, fs = u*3, bh = fs*1.15;
+      osdTag(o, t.cctvCam, u*3.2, u*3.2, fs, '#000', o.col, 'left');
+      osdTag(o, t.cctvTime, o.w - u*3.2, o.h - u*3.2 - bh, fs, '#000', o.col, 'right');
+      osdTag(o, t.cctvDate, o.w - u*3.2, o.h - u*3.2 - bh*2, fs, '#000', o.col, 'right');
+    },
+
+    // ref: visor de camcorder — bateria, modo, REC, timecode, zoom W–T, FN
+    camcorder(o){
+      const c = o.ctx, u = o.u, t = state.osd.text, fs = u*3.1, W = o.w, H = o.h;
+      c.shadowColor = 'rgba(0,0,0,.85)'; c.shadowOffsetX = c.shadowOffsetY = Math.max(1, u*0.22); c.shadowBlur = 0;
+      c.strokeStyle = o.col; c.fillStyle = o.col; c.lineWidth = Math.max(1.2, u*0.28);
+      const x = u*4.5, y = u*5.5;
+      c.strokeRect(x, y - fs*0.3, fs*1.1, fs*0.6);
+      c.fillRect(x + fs*1.1, y - fs*0.14, fs*0.14, fs*0.28);
+      c.fillRect(x + fs*0.12, y - fs*0.18, fs*0.7, fs*0.36);
+      osdText(o, t.camBattery, x + fs*1.45, y, fs, 'left', 'middle', o.col);
+      osdText(o, t.camMode, W*0.45, y, fs, 'left', 'middle', o.col);
+      osdText(o, 'REC', W*0.56, y, fs, 'left', 'middle', '#ff3b2f');
+      osdText(o, t.camTime, W - u*4.5, y, fs, 'right', 'middle', o.col);
+      const y2 = y + fs*1.1, bx = x + fs*0.75, bw = fs*2.2, bh = fs*0.42;
+      osdText(o, 'W', x, y2, fs*0.9, 'left', 'middle', o.col);
+      c.strokeStyle = o.col; c.strokeRect(bx, y2 - bh/2, bw, bh);
+      c.fillStyle = o.col; c.fillRect(bx, y2 - bh/2, bw*Math.max(0.04, t.camZoom/100), bh);
+      osdText(o, 'T', bx + bw + fs*0.2, y2, fs*0.9, 'left', 'middle', o.col);
+      c.shadowColor = 'transparent';
+      const fw = fs*1.7, fh = fs*0.95, fx = W - fw - u*4.5, fy = H - fh - u*4.5;
+      c.fillStyle = '#2f5fd0'; c.fillRect(fx, fy, fw, fh);
+      c.strokeStyle = '#cfd8ff'; c.lineWidth = Math.max(1, u*0.15); c.strokeRect(fx, fy, fw, fh);
+      osdText(o, 'FN', fx + fw/2, fy + fh*0.54, fs*0.85, 'center', 'middle', '#fff');
+    },
+  };
+
+  function drawOSD(ctx, w, h){
+    const draw = OSD_DRAW[state.osd.template];
+    if(!draw) return;
+    ctx.save();
+    draw({ ctx, w, h, u:Math.max(w, h)/100*state.osd.size/100, col:state.osd.color, temps:sceneTempsC() });
+    ctx.restore();
+  }
+  // OSD + escala. Em "baixa resolução" o OSD é desenhado a 720 px e
+  // ampliado, como a interface de uma câmera de vídeo.
+  function drawOverlay(ctx, w, h, clear){
+    if(clear) ctx.clearRect(0, 0, w, h);
+    if(state.osd.lowres && OSD_DRAW[state.osd.template]){
+      const f = Math.min(1, 720/Math.max(w, h));
+      const off = document.createElement('canvas');
+      off.width = Math.max(1, Math.round(w*f)); off.height = Math.max(1, Math.round(h*f));
+      drawOSD(off.getContext('2d'), off.width, off.height);
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(off, 0, 0, w, h);
+      ctx.restore();
+    } else drawOSD(ctx, w, h);
+    drawScale(ctx, w, h, false);
+  }
+
+  /* ---------------------------------------------------------------------
      RENDER
   --------------------------------------------------------------------- */
   // "temperaturas da cena": a escala segue a faixa atual na régua calor↔°C
@@ -1393,7 +1753,7 @@ void main(){
     if(!state.cropApplied || !srcTex) return;
     const sd = renderAll(false);
     syncSceneTemps();
-    drawScale(octx, RW, RH, true);
+    drawOverlay(octx, RW, RH, true);
     statusLabel.textContent = `${RW}×${RH}` + (sd.on ? ` · sensor ${sd.w}×${sd.h}` : '');
   }
   // sliders arrastados disparam vários eventos por frame: agrupa num rAF
@@ -1456,7 +1816,9 @@ void main(){
     const mode = state.seg.mode;
     const token = ++segToken;
     mask.ready = false;
+    clearDetections();
     syncSegUI();
+    syncOsdHint();
     if(mode === 'off'){ setSegStatus(''); requestRender(); return; }
     const m = SEG_MODELS[mode];
     setSegStatus(`carregando modelo ${m.label} (${m.size})…`, true);
@@ -1498,9 +1860,119 @@ void main(){
     uploadMask(data, w, h);
     mask.ready = true;
     mask.mode = mode === 'fast' ? 1 : 2;
+    computeDetections(data, w, h, mask.mode);
+    syncOsdHint();
     const cover = person/n;
     setSegStatus(cover < 0.005 ? 'nenhuma pessoa encontrada nesta imagem.' : `pessoa detectada (${Math.round(cover*100)}% da imagem).`);
     requestRender();
+  }
+
+  /* ---------------------------------------------------------------------
+     CAIXAS DO OSD
+     Componentes conexos da máscara numa grade de ≤160 px: uma caixa por
+     pessoa, rosto e peça de roupa (coordenadas 0–1, origem no topo).
+  --------------------------------------------------------------------- */
+  const det = { persons:[], faces:[], clothes:[], thumb:null };
+  function clearDetections(){ det.persons = []; det.faces = []; det.clothes = []; det.thumb = null; }
+  // strong = células de confiança alta; um componente só vale se tiver um
+  // núcleo forte (limiar com histerese), o que corta manchas fracas soltas
+  function components(grid, strong, gw, gh, minFrac, maxN){
+    const seen = new Uint8Array(gw*gh), out = [], stack = [];
+    for(let i=0; i<gw*gh; i++){
+      if(!grid[i] || seen[i]) continue;
+      let x0 = gw, y0 = gh, x1 = 0, y1 = 0, area = 0, core = 0;
+      seen[i] = 1; stack.push(i);
+      while(stack.length){
+        const k = stack.pop(), x = k % gw, y = (k/gw)|0;
+        area++;
+        core += strong[k];
+        if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y;
+        if(x > 0 && grid[k-1] && !seen[k-1]){ seen[k-1] = 1; stack.push(k-1); }
+        if(x < gw-1 && grid[k+1] && !seen[k+1]){ seen[k+1] = 1; stack.push(k+1); }
+        if(y > 0 && grid[k-gw] && !seen[k-gw]){ seen[k-gw] = 1; stack.push(k-gw); }
+        if(y < gh-1 && grid[k+gw] && !seen[k+gw]){ seen[k+gw] = 1; stack.push(k+gw); }
+      }
+      if(area >= minFrac*gw*gh && core >= minFrac*gw*gh*0.25) out.push({ x0:x0/gw, y0:y0/gh, x1:(x1+1)/gw, y1:(y1+1)/gh, area });
+    }
+    return out.sort((a,b)=>b.area - a.area).slice(0, maxN);
+  }
+  // junta pedaços vizinhos (dilatação 3×3) antes de separar os componentes
+  function dilate(grid, gw, gh){
+    const out = new Uint8Array(gw*gh);
+    for(let y=0; y<gh; y++) for(let x=0; x<gw; x++){
+      if(!grid[y*gw + x]) continue;
+      for(let dy=-1; dy<=1; dy++) for(let dx=-1; dx<=1; dx++){
+        const xx = x + dx, yy = y + dy;
+        if(xx >= 0 && xx < gw && yy >= 0 && yy < gh) out[yy*gw + xx] = 1;
+      }
+    }
+    return out;
+  }
+  // data vem do MediaPipe (linha 0 = topo), antes do flip do upload. O
+  // limite é baixo de propósito: em fotos difíceis a confiança da pessoa
+  // fica em 30–60% e um corte em 50% deixa metade do corpo de fora.
+  function computeDetections(data, w, h, mode){
+    const f = Math.min(1, 160/Math.max(w, h));
+    const gw = Math.max(1, Math.round(w*f)), gh = Math.max(1, Math.round(h*f));
+    const n = gw*gh, LO = 0.3*255, HI = 0.6*255;
+    const P = new Uint8Array(n), F = new Uint8Array(n), C = new Uint8Array(n);
+    const Ps = new Uint8Array(n), Fs = new Uint8Array(n), Cs = new Uint8Array(n);
+    for(let gy=0; gy<gh; gy++) for(let gx=0; gx<gw; gx++){
+      const sx = Math.min(w-1, Math.floor((gx+0.5)/gw*w)), sy = Math.min(h-1, Math.floor((gy+0.5)/gh*h));
+      const i = (sy*w + sx)*4, k = gy*gw + gx;
+      const p = mode === 1 ? data[i] : data[i] + data[i+1] + data[i+2] + data[i+3];
+      P[k] = p > LO ? 1 : 0; Ps[k] = p > HI ? 1 : 0;
+      if(mode === 2){
+        F[k] = data[i+2] > LO ? 1 : 0; Fs[k] = data[i+2] > HI ? 1 : 0;
+        C[k] = data[i+3] > LO ? 1 : 0; Cs[k] = data[i+3] > HI ? 1 : 0;
+      }
+    }
+    det.persons = components(dilate(P, gw, gh), Ps, gw, gh, 0.015, 4);
+    det.faces = mode === 2 ? components(dilate(F, gw, gh), Fs, gw, gh, 0.0015, 4) : [];
+    det.clothes = mode === 2 ? components(dilate(C, gw, gh), Cs, gw, gh, 0.01, 4) : [];
+    det.thumb = det.faces.length ? makeFaceThumb(det.faces[0]) : null;
+  }
+  // miniatura do rosto em P&B estourado com ruído (estilo câmera de vigilância)
+  function makeFaceThumb(fc){
+    const W = srcCanvas.width, H = srcCanvas.height;
+    const side = Math.max((fc.x1 - fc.x0)*W, (fc.y1 - fc.y0)*H)*1.7;
+    const cx = (fc.x0 + fc.x1)/2*W, cy = (fc.y0 + fc.y1)/2*H;
+    const c = document.createElement('canvas');
+    c.width = 192; c.height = 202;
+    const x = c.getContext('2d', { willReadFrequently:true });
+    x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height);
+    x.drawImage(srcCanvas, cx - side/2, cy - side*0.55, side, side*1.05, 0, 0, c.width, c.height);
+    const img = x.getImageData(0, 0, c.width, c.height), a = img.data;
+    for(let i=0; i<a.length; i+=4){
+      let v = 0.299*a[i] + 0.587*a[i+1] + 0.114*a[i+2];
+      v = (v - 118)*1.7 + 118 + (Math.random() - 0.5)*46;
+      a[i] = a[i+1] = a[i+2] = v < 0 ? 0 : v > 255 ? 255 : v;
+    }
+    x.putImageData(img, 0, 0);
+    return c;
+  }
+  const insideBox = (a, b)=>{ const cx = (a.x0 + a.x1)/2, cy = (a.y0 + a.y1)/2; return cx >= b.x0 && cx <= b.x1 && cy >= b.y0 && cy <= b.y1; };
+
+  // temperaturas pro OSD, lidas da cópia pequena do calor (linha 0 = base)
+  function sceneTempsC(){
+    const v = stats.samples;
+    if(!v) return { min:20, max:36 };
+    let mn = Infinity, mx = -Infinity;
+    for(let i=0; i<v.length; i++){ if(v[i] < mn) mn = v[i]; if(v[i] > mx) mx = v[i]; }
+    return { min:heatToC(mn), max:heatToC(mx) };
+  }
+  function boxTempC(b){
+    const v = stats.samples;
+    if(!v) return null;
+    const W = stats.sw, H = stats.sh;
+    const x0 = Math.max(0, Math.floor(b.x0*W)), x1 = Math.min(W, Math.ceil(b.x1*W));
+    const y0 = Math.max(0, Math.floor(b.y0*H)), y1 = Math.min(H, Math.ceil(b.y1*H));
+    let mx = -Infinity;
+    for(let y=y0; y<y1; y++){
+      const row = (H - 1 - y)*W;
+      for(let x=x0; x<x1; x++) if(v[row + x] > mx) mx = v[row + x];
+    }
+    return mx > -Infinity ? heatToC(mx) : null;
   }
   function syncSegUI(){
     const mode = state.seg.mode;
@@ -1678,6 +2150,71 @@ void main(){
   const syncScaleAuto = ()=>{ $('tmin').disabled = $('tmax').disabled = state.scale.auto; };
   bindCheck('scaleAuto', ()=>state.scale.auto, v=>{ state.scale.auto = v; syncScaleAuto(); });
   syncScaleAuto();
+
+  // osd: trocar de template traz a fonte e a cor dele; os textos de cada
+  // template ficam guardados mesmo trocando
+  const osdTemplate = $('osdTemplate'), osdFontSel = $('osdFont'), osdColor = $('osdColor');
+  osdTemplate.value = state.osd.template;
+  osdFontSel.value = state.osd.font;
+  osdColor.value = state.osd.color;
+  osdTemplate.addEventListener('change', ()=>{
+    state.osd.template = osdTemplate.value;
+    const tpl = OSD_TEMPLATES[state.osd.template];
+    if(tpl){
+      state.osd.font = osdFontSel.value = tpl.font;
+      state.osd.color = osdColor.value = tpl.color;
+    }
+    syncOsdUI();
+    loadOsdFont();
+    requestRender();
+  });
+  osdFontSel.addEventListener('change', ()=>{ state.osd.font = osdFontSel.value; loadOsdFont(); requestRender(); });
+  osdColor.addEventListener('input', ()=>{ state.osd.color = osdColor.value; requestRender(); });
+  bindRange('osdSize', ()=>state.osd.size, v=>state.osd.size = v, pct);
+  bindCheck('osdLowres', ()=>state.osd.lowres, v=>state.osd.lowres = v);
+  function buildOsdFields(){
+    const host = $('osdFields');
+    host.innerHTML = '';
+    const tpl = OSD_TEMPLATES[state.osd.template];
+    if(!tpl) return;
+    tpl.fields.forEach(([key, label, , type])=>{
+      const row = document.createElement('div');
+      row.className = 'row' + (type === 'multi' ? ' row-top' : '');
+      const lbl = document.createElement('label');
+      lbl.textContent = label; lbl.htmlFor = 'osd_' + key;
+      let inp, val = null;
+      if(type === 'multi'){ inp = document.createElement('textarea'); inp.rows = 3; }
+      else if(type === 'range'){
+        inp = document.createElement('input'); inp.type = 'range'; inp.min = 0; inp.max = 100;
+        val = document.createElement('span'); val.className = 'val';
+      } else { inp = document.createElement('input'); inp.type = 'text'; }
+      inp.id = 'osd_' + key; inp.autocomplete = 'off'; inp.spellcheck = false;
+      inp.value = state.osd.text[key];
+      if(val) val.textContent = inp.value + '%';
+      inp.addEventListener('input', ()=>{
+        state.osd.text[key] = type === 'range' ? +inp.value : inp.value;
+        if(val) val.textContent = inp.value + '%';
+        requestRender();
+      });
+      row.append(lbl, inp);
+      if(val) row.append(val);
+      host.appendChild(row);
+    });
+  }
+  function syncOsdHint(){
+    const tpl = OSD_TEMPLATES[state.osd.template];
+    $('osdHint').textContent = tpl && tpl.seg && !mask.ready
+      ? 'ligue a detecção em "pessoa (ia)" pra ter as caixas automáticas em volta das pessoas.' : '';
+  }
+  function syncOsdUI(){
+    $('osdCommon').style.display = OSD_TEMPLATES[state.osd.template] ? '' : 'none';
+    buildOsdFields();
+    syncOsdHint();
+  }
+  function loadOsdFont(){
+    document.fonts.load(`20px ${OSD_FONTS[state.osd.font].css}`).then(()=>requestRender()).catch(()=>{});
+  }
+  syncOsdUI();
   bindToggle('scalePosGroup', ()=>state.scale.pos, v=>state.scale.pos = v);
   bindToggle('scaleUnitGroup', ()=>state.scale.unit, v=>state.scale.unit = v);
   bindToggle('scaleTextGroup', ()=>state.scale.text, v=>state.scale.text = v);
@@ -1697,6 +2234,7 @@ void main(){
     state.img = null;
     state.cropApplied = false;
     mask.ready = false;
+    clearDetections();
     segToken++;
     if(state.seg.mode !== 'off') setSegStatus('');
     dropHint.style.display = 'flex';
@@ -1811,6 +2349,7 @@ void main(){
     uploadSource(srcCanvas);
     state.cropApplied = true;
     mask.ready = false;
+    clearDetections();
     showResultUI();
     render();
     // a máscara é do recorte: recorte novo, detecção nova
@@ -1980,13 +2519,13 @@ void main(){
     const pad = n => String(n).padStart(2, '0');
     return `${pad(d.getMonth()+1)}${pad(d.getFullYear()%100)}-${pad(d.getHours())}${pad(d.getMinutes())}`;
   }
-  // WebGL + escala juntos num canvas 2D
+  // WebGL + OSD + escala juntos num canvas 2D
   function composite(w, h){
     const out = document.createElement('canvas');
     out.width = w; out.height = h;
     const ctx = out.getContext('2d');
     ctx.drawImage(glCanvas, 0, 0);
-    drawScale(ctx, w, h, false);
+    drawOverlay(ctx, w, h, false);
     return out;
   }
   // refaz todo o pipeline a partir da imagem original no tamanho pedido
@@ -2109,7 +2648,7 @@ void main(){
   }
   // cores da paleta atual + fundo + as últimas escolhidas
   function usedColors(){
-    const list = [...sortedStops().map(s=>s.color), state.seg.bgColor, ...recentColors()];
+    const list = [...sortedStops().map(s=>s.color), state.seg.bgColor, state.osd.color, ...recentColors()];
     const seen = new Set();
     return list.map(c=>normalizeHex(c)).filter(c=>c && !seen.has(c) && seen.add(c)).slice(0, 14);
   }
