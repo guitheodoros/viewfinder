@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Thermograph</title>
+<title>Viewfinder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=VT323&family=Space+Mono:wght@400;700&family=Michroma&display=swap" rel="stylesheet">
@@ -11,7 +11,7 @@
   // tema escolhido antes do primeiro paint: preferência salva, senão escuro
   (function(){
     var t = "";
-    try { t = localStorage.getItem("thermograph-theme") || ""; } catch(e){}
+    try { t = localStorage.getItem("viewfinder-theme") || ""; } catch(e){}
     if (t !== "light") t = "dark";
     document.documentElement.dataset.theme = t;
   })();
@@ -409,7 +409,7 @@
 
 <header>
   <div>
-    <h1>THERMOGRAPH</h1>
+    <h1>VIEWFINDER</h1>
   </div>
   <div class="header-actions">
     <a href="https://theodoros.cc" target="_blank" rel="noopener">theodoros.cc</a>
@@ -704,7 +704,7 @@
 </div>
 
 <footer>
-  thermograph &middot; processamento 100% local no navegador (webgl2) &middot; nenhuma imagem é enviada a servidor
+  viewfinder &middot; processamento 100% local no navegador (webgl2) &middot; nenhuma imagem é enviada a servidor
 </footer>
 
 <script>
@@ -3006,7 +3006,7 @@ void main(){
       out.toBlob(blob=>{
         done();
         if(!blob){ statusEl.textContent = 'não foi possível gerar o PNG nesse tamanho'; return; }
-        downloadBlob(blob, `thermograph-${out.width}x${out.height}-${exportTimestamp()}.png`);
+        downloadBlob(blob, `viewfinder-${out.width}x${out.height}-${exportTimestamp()}.png`);
       }, 'image/png');
     }, 30);
   });
@@ -3023,7 +3023,7 @@ void main(){
   themeBtn.addEventListener('click', ()=>{
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
-    try { localStorage.setItem('thermograph-theme', next); } catch(e){}
+    try { localStorage.setItem('viewfinder-theme', next); } catch(e){}
     syncThemeBtn();
   });
   syncThemeBtn();
@@ -3035,7 +3035,7 @@ void main(){
      e a fileira de cores usadas. O input nativo continua no DOM, escondido:
      guarda o valor e recebe os eventos "input"/"change".
   --------------------------------------------------------------------- */
-  const RECENT_COLORS_KEY = "thermograph-recent-colors";
+  const RECENT_COLORS_KEY = "viewfinder-recent-colors";
   function rgbToHsv([r,g,b]){
     const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
     let h = 0;
