@@ -367,6 +367,21 @@
   .pal-btn.active{ border-color:var(--text); box-shadow:0 0 0 1px var(--text); color:var(--text); }
   .pal-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
   .pal-preview{ height:14px; border-radius:2px; margin-bottom:10px; box-shadow:inset 0 0 0 1px var(--swatch-border); }
+  /* mini-mapa da grade: um botão por quadro, no arranjo e proporção do layout */
+  .cell-map{
+    display:grid; gap:3px; padding:3px; margin:0 auto 10px; max-width:100%;
+    background:var(--field); border:1px solid var(--control); border-radius:3px;
+  }
+  .cell-map button{
+    min-width:0; min-height:0; padding:0; border:1px solid var(--control); border-radius:2px;
+    background:var(--panel); color:var(--seg-text); font-family:inherit; font-size:10px; font-weight:500;
+    cursor:pointer; transition:background-color .15s, color .15s, border-color .15s;
+  }
+  .cell-map button:hover{ border-color:var(--text); color:var(--text); }
+  .cell-map button.nosignal{ background:#0b17e8; border-color:#0b17e8; color:#fff; }
+  .cell-map button.active{ background:var(--text); border-color:var(--text); color:var(--on-text); }
+  .cell-map button.active.nosignal{ background:#0b17e8; color:#fff; outline:2px solid var(--text); outline-offset:1px; }
+  .cell-map button:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
   .stop-row{ display:flex; align-items:center; gap:6px; margin-bottom:6px; }
   .stop-row input[type=range]{ flex:1; }
   .stop-row .val{ font-size:11px; min-width:30px; text-align:right; font-variant-numeric:tabular-nums; }
@@ -652,6 +667,7 @@
           <option value="2x2">2 × 2</option>
           <option value="2x3">2 colunas × 3</option>
           <option value="3x2">3 colunas × 2</option>
+          <option value="1p5">1 + 5 (destaque)</option>
         </select>
       </div>
       <div id="gridControls" style="display:none;">
@@ -660,7 +676,7 @@
         <div class="row"><label for="gridNoSignal">sem sinal</label><input type="text" id="gridNoSignal" autocomplete="off" spellcheck="false"></div>
         <button class="btn" id="btnShuffleCells" style="width:100%;margin-bottom:6px;">⟳ sortear enquadramentos</button>
         <div class="subhead">quadro</div>
-        <div class="toggle-group" id="cellSel" style="margin-bottom:10px;"></div>
+        <div class="cell-map" id="cellSel" role="group" aria-label="Escolher quadro"></div>
         <div class="row"><label>conteúdo</label>
           <div class="toggle-group" id="cellMode">
             <button data-v="image" class="active">imagem</button>
@@ -1942,7 +1958,7 @@ void main(){
   function drawOSD(ctx, w, h, cell){
     const draw = OSD_DRAW[state.osd.template];
     if(!draw) return;
-    const o = { ctx, w, h, u:Math.max(w, h)/100*state.osd.size/100, col:state.osd.color, temps:sceneTempsC(),
+    const o = { ctx, w, h, u:(cell ? cell.osdLong : Math.max(w, h))/100*state.osd.size/100, col:state.osd.color, temps:sceneTempsC(),
       idx:0, zoom:null, nosignal:false, det };
     if(cell){
       o.idx = cell.idx; o.zoom = cell.zoom; o.nosignal = cell.nosignal;
@@ -1958,25 +1974,41 @@ void main(){
      A imagem inteira é renderizada uma vez (glCanvas) e cada quadro copia
      dela um enquadramento, com o próprio OSD por cima.
   --------------------------------------------------------------------- */
-  const LAYOUTS = { '1x1':[1,1], '2x2':[2,2], '2x3':[2,3], '3x2':[3,2] };
-  function gridCount(){ const [c, r] = LAYOUTS[state.grid.layout]; return c*r; }
+  // cada layout é uma grade cols×rows e uma lista de quadros [coluna, linha,
+  // largura, altura] em células, na ordem de numeração; nosignal = quadro
+  // que começa "sem sinal" (-1 = nenhum). Layout novo = uma entrada aqui.
+  const uniformLayout = (cols, rows, nosignal)=>({ cols, rows, nosignal,
+    cells:Array.from({ length:cols*rows }, (_, i)=>[i % cols, Math.floor(i/cols), 1, 1]) });
+  const LAYOUTS = {
+    '1x1': uniformLayout(1, 1, -1),
+    '2x2': uniformLayout(2, 2, 2),
+    '2x3': uniformLayout(2, 3, 2),
+    '3x2': uniformLayout(3, 2, 2),
+    // destaque 2×2 no canto superior esquerdo + 5 quadros em volta (monitor de CCTV)
+    '1p5': { cols:3, rows:3, nosignal:5, cells:[[0,0,2,2], [2,0,1,1], [2,1,1,1], [0,2,1,1], [1,2,1,1], [2,2,1,1]] },
+  };
+  function gridCount(){ return LAYOUTS[state.grid.layout].cells.length; }
   // quadros em px da saída (w×h) + o recorte de cada um na imagem
   function gridCells(w, h){
-    const [cols, rows] = LAYOUTS[state.grid.layout];
-    if(cols*rows === 1) return null;
+    const L = LAYOUTS[state.grid.layout];
+    if(L.cells.length === 1) return null;
     const gap = state.grid.gap/1000*Math.max(w, h);
-    const cw = (w - gap*(cols + 1))/cols, ch = (h - gap*(rows + 1))/rows;
-    const out = [];
-    for(let r=0; r<rows; r++) for(let c=0; c<cols; c++){
-      const idx = r*cols + c, cell = state.grid.cells[idx];
-      const x = gap + c*(cw + gap), y = gap + r*(ch + gap);
+    const uw = (w - gap*(L.cols + 1))/L.cols, uh = (h - gap*(L.rows + 1))/L.rows;
+    const out = L.cells.map(([c, r, sc, sr], idx)=>{
+      const cell = state.grid.cells[idx];
+      const x = gap + c*(uw + gap), y = gap + r*(uh + gap);
+      const cw = sc*uw + (sc - 1)*gap, ch = sr*uh + (sr - 1)*gap;
       // recorte que cobre o quadro, com o zoom dele, sem sair da imagem
       const asp = cw/ch, zoom = Math.max(1, cell.zoom);
       const sw = Math.min(w, h*asp)/zoom, sh = sw/asp;
       const sx = Math.min(w - sw, Math.max(0, cell.x*w - sw/2)), sy = Math.min(h - sh, Math.max(0, cell.y*h - sh/2));
-      out.push({ idx, x, y, w:cw, h:ch, zoom, nosignal:cell.mode === 'nosignal',
-        src:{ sx, sy, sw, sh }, crop:{ x0:sx/w, y0:sy/h, x1:(sx + sw)/w, y1:(sy + sh)/h } });
-    }
+      return { idx, x, y, w:cw, h:ch, zoom, nosignal:cell.mode === 'nosignal',
+        src:{ sx, sy, sw, sh }, crop:{ x0:sx/w, y0:sy/h, x1:(sx + sw)/w, y1:(sy + sh)/h } };
+    });
+    // OSD do mesmo tamanho em todos os quadros, medido pelo menor (como o
+    // OSD em pixels fixos de um gravador de verdade)
+    const osdLong = Math.min(...out.map(c=>Math.max(c.w, c.h)));
+    out.forEach(c=>{ c.osdLong = osdLong; });
     return out;
   }
   // quadro azul "sem sinal" com o texto numa caixa contornada
@@ -1996,8 +2028,9 @@ void main(){
   }
   // enquadramentos automáticos: o 1º quadro é a imagem toda; os outros
   // miram nos rostos e pessoas detectados, depois em pontos fixos.
-  // shuffle = sorteia pontos e zoom (o modo de cada quadro é mantido)
-  function autoCells(n, shuffle){
+  // shuffle = sorteia pontos e zoom; keepModes = mantém o modo (imagem ou
+  // sem sinal) de cada quadro em vez de voltar ao padrão do layout
+  function autoCells(n, shuffle, keepModes){
     const pts = [];
     det.faces.forEach(f=>pts.push({ x:(f.x0 + f.x1)/2, y:(f.y0 + f.y1)/2, zoom:Math.min(6, Math.max(1.6, 0.45/Math.max(0.02, f.y1 - f.y0))) }));
     det.persons.forEach(p=>pts.push({ x:(p.x0 + p.x1)/2, y:(p.y0 + p.y1)/2, zoom:Math.min(3, Math.max(1.1, 0.8/Math.max(p.y1 - p.y0, p.x1 - p.x0))) }));
@@ -2006,7 +2039,7 @@ void main(){
     const old = state.grid.cells;
     const cells = [];
     for(let i=0; i<n; i++){
-      const mode = old[i] ? old[i].mode : (n >= 4 && i === 2 ? 'nosignal' : 'image');
+      const mode = keepModes && old[i] ? old[i].mode : (i === LAYOUTS[state.grid.layout].nosignal ? 'nosignal' : 'image');
       if(i === 0){ cells.push({ mode, x:0.5, y:0.5, zoom:1 }); continue; }
       const p = pts[(i - 1) % pts.length];
       const k = shuffle ? 0.8 + Math.random()*0.5 : 1;
@@ -2045,7 +2078,7 @@ void main(){
         target.save();
         target.translate(cell.x*f, cell.y*f);
         target.beginPath(); target.rect(0, 0, cell.w*f, cell.h*f); target.clip();
-        drawOSD(target, cell.w*f, cell.h*f, cell);
+        drawOSD(target, cell.w*f, cell.h*f, { ...cell, osdLong:cell.osdLong*f });
         target.restore();
       });
       if(off){
@@ -2184,7 +2217,7 @@ void main(){
     computeDetections(data, w, h, mask.mode);
     syncOsdHint();
     // enquadramentos automáticos passam a mirar nas pessoas detectadas
-    if(state.grid.auto){ state.grid.cells = autoCells(gridCount(), false); syncGridUI(); }
+    if(state.grid.auto){ state.grid.cells = autoCells(gridCount(), false, true); syncGridUI(); }
     const cover = person/n;
     setSegStatus(cover < 0.005 ? 'nenhuma pessoa encontrada nesta imagem.' : `pessoa detectada (${Math.round(cover*100)}% da imagem).`);
     requestRender();
@@ -2579,43 +2612,55 @@ void main(){
   // grade multicâmera
   const gridLayout = $('gridLayout');
   gridLayout.value = state.grid.layout;
-  state.grid.cells = autoCells(gridCount(), false);
+  state.grid.cells = autoCells(gridCount(), false, false);
   const curCell = ()=>state.grid.cells[state.grid.sel];
   // mexer num quadro tira a grade do modo automático (a detecção nova não
   // refaz mais os enquadramentos)
   const cellEdited = ()=>{ state.grid.auto = false; };
   const cellCtls = [
-    bindToggle('cellMode', ()=>curCell().mode, v=>{ curCell().mode = v; cellEdited(); }),
+    bindToggle('cellMode', ()=>curCell().mode, v=>{ curCell().mode = v; cellEdited(); buildCellMap(); }),
     bindRange('cellZoom', ()=>Math.round(curCell().zoom*100), v=>{ curCell().zoom = v/100; cellEdited(); }, v=>(v/100).toFixed(1) + '×'),
     bindRange('cellX', ()=>Math.round(curCell().x*100), v=>{ curCell().x = v/100; cellEdited(); }, pct),
     bindRange('cellY', ()=>Math.round(curCell().y*100), v=>{ curCell().y = v/100; cellEdited(); }, pct),
   ];
-  function buildCellSel(){
-    const host = $('cellSel');
+  // mini-mapa: o layout desenhado na proporção da imagem, um botão por quadro
+  function buildCellMap(){
+    const host = $('cellSel'), L = LAYOUTS[state.grid.layout];
     host.innerHTML = '';
-    for(let i=0; i<gridCount(); i++){
+    host.style.gridTemplateColumns = `repeat(${L.cols}, 1fr)`;
+    host.style.gridTemplateRows = `repeat(${L.rows}, 1fr)`;
+    const asp = state.cropApplied && RW && RH ? RW/RH : 0.8;
+    const w = Math.min(host.parentElement.clientWidth || 268, 150*asp);
+    host.style.width = w + 'px';
+    host.style.height = w/asp + 'px';
+    L.cells.forEach(([c, r, sc, sr], i)=>{
+      const nosignal = state.grid.cells[i] && state.grid.cells[i].mode === 'nosignal';
       const b = document.createElement('button');
       b.type = 'button'; b.textContent = i + 1;
+      b.style.gridColumn = `${c + 1} / span ${sc}`;
+      b.style.gridRow = `${r + 1} / span ${sr}`;
       b.classList.toggle('active', i === state.grid.sel);
-      b.setAttribute('aria-label', `Quadro ${i+1}`);
+      b.classList.toggle('nosignal', nosignal);
+      b.setAttribute('aria-pressed', i === state.grid.sel);
+      b.setAttribute('aria-label', `Quadro ${i+1}` + (nosignal ? ', sem sinal' : ''));
       b.addEventListener('click', ()=>{
         state.grid.sel = i;
-        host.querySelectorAll('button').forEach((x, k)=>x.classList.toggle('active', k === i));
-        cellCtls.forEach(c=>c.sync());
+        buildCellMap();
+        cellCtls.forEach(ctl=>ctl.sync());
       });
       host.appendChild(b);
-    }
+    });
   }
   function syncGridUI(){
     $('gridControls').style.display = gridCount() > 1 ? '' : 'none';
     state.grid.sel = Math.min(state.grid.sel, gridCount() - 1);
-    buildCellSel();
+    buildCellMap();
     cellCtls.forEach(c=>c.sync());
   }
   gridLayout.addEventListener('change', ()=>{
     state.grid.layout = gridLayout.value;
     state.grid.auto = true;
-    state.grid.cells = autoCells(gridCount(), false);
+    state.grid.cells = autoCells(gridCount(), false, false);
     syncGridUI();
     requestRender();
   });
@@ -2627,7 +2672,7 @@ void main(){
   gridNoSignal.value = state.grid.noSignal;
   gridNoSignal.addEventListener('input', ()=>{ state.grid.noSignal = gridNoSignal.value; requestRender(); });
   $('btnShuffleCells').addEventListener('click', ()=>{
-    state.grid.cells = autoCells(gridCount(), true);
+    state.grid.cells = autoCells(gridCount(), true, true);
     state.grid.auto = false;
     cellCtls.forEach(c=>c.sync());
     requestRender();
@@ -2768,6 +2813,7 @@ void main(){
     state.cropApplied = true;
     mask.ready = false;
     clearDetections();
+    buildCellMap();
     showResultUI();
     render();
     // a máscara é do recorte: recorte novo, detecção nova
